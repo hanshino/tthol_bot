@@ -1,0 +1,16 @@
+{
+  "name": "tthol",
+  "version": "1.0.0",
+  "description": "tthol discord chat bot",
+  "main": "index.js",
+  "author": "hanshino <c0952199517@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "discord.js": "^12.5.3",
+    "memory-cache": "^0.2.0"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0"
+  }
+}
