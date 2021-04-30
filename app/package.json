@@ -5,6 +5,9 @@
   "main": "index.js",
   "author": "hanshino <c0952199517@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "axios": "^0.21.1",
     "discord.js": "^12.5.3",
