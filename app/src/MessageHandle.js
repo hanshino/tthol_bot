@@ -31,10 +31,7 @@ module.exports = async Message => {
     }
   }
 
-  if (!target) {
-    console.log("none match router in Message");
-    return;
-  }
+  if (!target) return;
 
   Message.channel.startTyping(1);
   await target.action(Message, { ...target.predicate });
