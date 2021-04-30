@@ -1,7 +1,17 @@
 const { Message } = require("discord.js");
 const EquipController = require("./controllers/EquipController");
+const QuestController = require("./controllers/QuestController");
 
-const router = [text(/^坐騎\s(?<equip>\S+)$/, EquipController.FindDriver)];
+const router = [
+  text(/^(坐|座)騎?\s(?<equip>\S+)$/, EquipController.FindDriver),
+  text(/^背(部|飾)?\s(?<equip>\S+)$/, EquipController.FindBack),
+  text(
+    /^160\s(?<sum>(15|12))\s(?<room1>.)(?<number1>[1-9])\s(?<room2>.)(?<number2>[1-9])$/,
+    QuestController.ForestMatrix
+  ),
+  text(/^175\s(?<number>\d{1,3})$/, QuestController.SevenStar),
+  text(/^180\s(?<sum>\d{2})\s(?<leak>\d{1})/, QuestController.GodQuest),
+];
 
 /**
  * 文字事件處理
@@ -21,10 +31,14 @@ module.exports = async Message => {
     }
   }
 
-  if (!target) return;
+  if (!target) {
+    console.log("none match router in Message");
+    return;
+  }
 
   Message.channel.startTyping(1);
   await target.action(Message, { ...target.predicate });
+  Message.channel.stopTyping(true);
 };
 
 /**

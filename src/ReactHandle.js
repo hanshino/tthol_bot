@@ -28,6 +28,7 @@ module.exports = async (MessageReaction, User) => {
 
   channel.startTyping(1);
   await target.action(MessageReaction, { ...target.predicate });
+  channel.stopTyping(true);
 };
 
 function emoji(pattern, action) {

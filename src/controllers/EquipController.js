@@ -3,17 +3,48 @@ const EquipModel = require("../models/EquipModels");
 const memory = require("memory-cache");
 
 /**
- * 查找裝備
+ * 查找坐騎
  * @param {Message} Message
+ * @param {Object} props
  */
 exports.FindDriver = async (Message, props) => {
   let { equip } = props.groups;
 
-  console.log(`開始尋找 ${equip}`);
-
   let datas = await EquipModel.getDrivers();
-  let findResult = datas.find(data => data["名稱"] === equip);
-  let filterResult = datas.filter(data => data["名稱"].indexOf(equip) !== -1);
+  let results = getEquipByKeyword(datas, equip);
+
+  sendResult(Message, results);
+};
+
+/**
+ * 查找背飾
+ * @param {Message} Message
+ * @param {Object} props
+ */
+exports.FindBack = async (Message, props) => {
+  let { equip } = props.groups;
+
+  let data = await EquipModel.getBack();
+  let results = getEquipByKeyword(data, equip);
+
+  sendResult(Message, results);
+};
+
+function getEquipByKeyword(equipDatas, keyword) {
+  return {
+    find: equipDatas.find(data => data["名稱"] === keyword),
+    filter: equipDatas.filter(data => data["名稱"].indexOf(keyword) !== -1),
+  };
+}
+
+/**
+ * @param {Message} Message
+ * @param {Object} results
+ * @param {Object|undefined} results.find
+ * @param {Array} results.filter
+ */
+function sendResult(Message, results) {
+  let { find: findResult, filter: filterResult } = results;
 
   if (!findResult && filterResult.length === 0) {
     return Message.channel.send("找不到裝備");
@@ -27,11 +58,10 @@ exports.FindDriver = async (Message, props) => {
   if (filterResult.length === 1) {
     findResult = filterResult[0];
     Message.channel.send(genEquipMessage(findResult));
-    return;
   } else {
     showChoose(Message, filterResult);
   }
-};
+}
 
 /**
  * @param {MessageReaction} MessageReaction
