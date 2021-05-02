@@ -6,7 +6,9 @@
   "author": "hanshino <c0952199517@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "predev": "yarn install",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "axios": "^0.21.1",
@@ -14,6 +16,7 @@
     "memory-cache": "^0.2.0"
   },
   "devDependencies": {
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "nodemon": "^2.0.7"
   }
 }
