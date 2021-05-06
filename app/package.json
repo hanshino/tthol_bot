@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node index.js",
     "predev": "yarn install",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js -L"
   },
   "dependencies": {
     "axios": "^0.21.1",
