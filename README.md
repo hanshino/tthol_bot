@@ -10,8 +10,29 @@
 
 ## 開發環境
 
-使用語言
+此機器人使用了 `docker-compose` 進行快速建置，也方便日後迅速擴充
+
+使用語言
   - `node.js`
 
 環境部署
   - `docker`
+
+## 開發者相關
+
+1. 打開你的CLI跟著我一起輸入(終端機、命令提示字元、命令介面)
+2. `git clone https://github.com/hanshino/tthol_bot.git`
+3. `cd tthol_bot`
+4. `cp .env.example .env`
+5. 編輯 `.env` ，請務必填上所有資訊並存檔！
+
+### 協作開發
+
+6. `docker-compose -f docker-compose-dev.yml up -d`
+
+### 單純使用
+
+6. `docker-compose up -d`
+
+### 後續
+7. 邀請至自己的頻道即可！
