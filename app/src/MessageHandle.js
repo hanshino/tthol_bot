@@ -6,6 +6,10 @@ const router = [
   text(/^(坐|座)騎?\s(?<equip>\S+)$/, EquipController.FindDriver),
   text(/^背(部|飾)?\s(?<equip>\S+)$/, EquipController.FindBack),
   text(
+    /^背[部飾]?(\s(\d{0,3})?(等級?|體力?|真氣?|外功?|根骨?|身法?|技巧?|內力|玄學?|物攻?|內勁|命中?|閃躲?|重擊?|防禦?|護勁?)(\d{0,3})?)+$/,
+    EquipController.filterBack
+  ),
+  text(
     /^160\s(?<sum>(15|12))\s(?<room1>.)(?<number1>[1-9])\s(?<room2>.)(?<number2>[1-9])$/,
     QuestController.ForestMatrix
   ),
@@ -30,6 +34,9 @@ module.exports = async Message => {
       break;
     }
   }
+
+  const { username } = Message.author;
+  console.log(username, Message.content);
 
   if (!target) return;
 

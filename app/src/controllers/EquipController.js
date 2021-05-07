@@ -126,3 +126,25 @@ function genEquipMessage(equipData) {
 
   return `\`\`\`\n${information}\n\`\`\``;
 }
+
+/**
+ * @param {Message} Message
+ * @param {Object} props
+ */
+exports.filterBack = (Message, props) => {
+  console.log(Message.content, props);
+};
+
+/**
+ * 整理出屬性資料
+ * @param {Message} Message
+ */
+function trimAttribute(Message) {
+  const { content } = Message;
+  let datas = content.split(/\s+/g);
+  let order = datas.shift();
+
+  
+
+
+}
