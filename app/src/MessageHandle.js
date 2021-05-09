@@ -5,6 +5,10 @@ const QuestController = require("./controllers/QuestController");
 const router = [
   text(/^(坐|座)騎?\s(?<equip>\S+)$/, EquipController.FindDriver),
   text(/^背(部|飾)?\s(?<equip>\S+)$/, EquipController.FindBack),
+  text(/^左(飾)?\s(?<equip>\S+)$/, EquipController.FindLeft),
+  text(/^(帽|頭)(飾|部)?\s(?<equip>\S+)$/, EquipController.FindHat),
+  text(/^右(飾)?\s(?<equip>\S+)$/, EquipController.FindRight),
+  text(/^中(飾)?\s(?<equip>\S+)$/, EquipController.FindMid),
   text(
     /^160\s(?<sum>(15|12))\s(?<room1>.)(?<number1>[1-9])\s(?<room2>.)(?<number2>[1-9])$/,
     QuestController.ForestMatrix

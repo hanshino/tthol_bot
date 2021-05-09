@@ -30,6 +30,42 @@ exports.FindBack = async (Message, props) => {
   sendResult(Message, results);
 };
 
+exports.FindLeft = async (Message, props) => {
+  let { equip } = props.groups;
+
+  let data = await EquipModel.getLeft();
+  let results = getEquipByKeyword(data, equip);
+
+  sendResult(Message, results);
+};
+
+exports.FindRight = async (Message, props) => {
+  let { equip } = props.groups;
+
+  let data = await EquipModel.getRight();
+  let results = getEquipByKeyword(data, equip);
+
+  sendResult(Message, results);
+};
+
+exports.FindHat = async (Message, props) => {
+  let { equip } = props.groups;
+
+  let data = await EquipModel.getHat();
+  let results = getEquipByKeyword(data, equip);
+
+  sendResult(Message, results);
+};
+
+exports.FindMid = async (Message, props) => {
+  let { equip } = props.groups;
+
+  let data = await EquipModel.getMid();
+  let results = getEquipByKeyword(data, equip);
+
+  sendResult(Message, results);
+};
+
 function getEquipByKeyword(equipDatas, keyword) {
   return {
     find: equipDatas.find(data => data["名稱"] === keyword),
