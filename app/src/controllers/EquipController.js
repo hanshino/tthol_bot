@@ -30,10 +30,16 @@ exports.FindBack = async (Message, props) => {
   sendResult(Message, results);
 };
 
-function getEquipByKeyword(equipDatas, keyword) {
+/**
+ * 透過關鍵字搜尋裝備
+ * @param {Array} equipData
+ * @param {String} keyword
+ * @returns {Object}
+ */
+function getEquipByKeyword(equipData, keyword) {
   return {
-    find: equipDatas.find(data => data["名稱"] === keyword),
-    filter: equipDatas.filter(data => data["名稱"].indexOf(keyword) !== -1),
+    find: equipData.find(data => data["名稱"] === keyword),
+    filter: equipData.filter(data => data["名稱"].indexOf(keyword) !== -1),
   };
 }
 
@@ -131,9 +137,39 @@ function genEquipMessage(equipData) {
  * @param {Message} Message
  * @param {Object} props
  */
-exports.filterBack = (Message, props) => {
-  console.log(Message.content, props);
+exports.filterBack = async Message => {
+  let { attributes: attributeData } = trimAttribute(Message);
+  let equipData = await EquipModel.getBack();
+  let filterResult = getEquipByFilter(equipData, attributeData);
+
+  return showFilterResult(Message, filterResult);
 };
+
+/**
+ * @param {Message} Message
+ * @param {Object} props
+ */
+exports.filterDriver = async Message => {
+  let { attributes: attributeData } = trimAttribute(Message);
+  let equipData = await EquipModel.getDrivers();
+  let filterResult = getEquipByFilter(equipData, attributeData);
+
+  return showFilterResult(Message, filterResult);
+};
+
+/**
+ * @param {Message} Message
+ * @param {Array} filterResult
+ */
+function showFilterResult(Message, filterResult) {
+  if (filterResult.length > 1) {
+    return showChoose(Message, filterResult);
+  } else if (filterResult.length === 1) {
+    return Message.channel.send(genEquipMessage(filterResult[0]));
+  } else {
+    return Message.channel.send("無符合結果，建議調整搜尋條件！");
+  }
+}
 
 /**
  * 整理出屬性資料
@@ -144,7 +180,44 @@ function trimAttribute(Message) {
   let datas = content.split(/\s+/g);
   let order = datas.shift();
 
-  
+  let attributes = datas.map(data => ({
+    attribute: data.replace(/\d+/g, ""),
+    value: data.replace(/\D+/g, ""),
+  }));
 
+  return { order, attributes };
+}
 
+/**
+ * 透過屬性值篩選出符合的裝備
+ * @param {Array} equipData
+ * @param {Array<{attribute: String, value: String}>} attributes
+ */
+function getEquipByFilter(equipData, attributes) {
+  return equipData.filter(equip => {
+    let isPass = true;
+    attributes.forEach(data => {
+      if (isPass === false) return;
+      let { attribute, value } = data;
+      value = parseInt(value);
+
+      let equipKeys = Object.keys(equip);
+      attribute = equipKeys.find(key => key.indexOf(attribute) === 0);
+
+      // 無此屬性 不列入篩選
+      if (!attribute) {
+        isPass = false;
+        return;
+      }
+
+      let equipValue = parseInt(equip[attribute]);
+
+      if (equipValue < value) {
+        isPass = false;
+        return;
+      }
+    });
+
+    return isPass;
+  });
 }
