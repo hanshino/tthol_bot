@@ -1,6 +1,8 @@
 const { Message } = require("discord.js");
 const EquipController = require("./controllers/EquipController");
+const KeywordController = require("./controllers/KeywordController");
 const QuestController = require("./controllers/QuestController");
+const memory = require("memory-cache");
 
 const router = [
   text(
@@ -23,6 +25,11 @@ const router = [
   ),
   text(/^175\s(?<number>\d{1,3})$/, QuestController.SevenStar),
   text(/^180\s(?<sum>\d{2})\s(?<leak>\d{1})/, QuestController.GodQuest),
+  route(Message => KeywordController.detectKeyword(Message), KeywordController.handleSend),
+  text("/refresh", Message => {
+    memory.clear();
+    Message.channel.send(`<@${Message.author.id}> 資料已刷新！`);
+  }),
 ];
 
 /**
@@ -34,8 +41,8 @@ module.exports = async Message => {
   let target = undefined;
 
   for (let i = 0; i < router.length; i++) {
-    let route = router[i];
-    let result = route(Message);
+    let currRoute = router[i];
+    let result = await currRoute(Message);
 
     if (result.predicate) {
       target = result;
@@ -92,6 +99,19 @@ function text(pattern, action) {
     return {
       predicate: false,
       aciton,
+    };
+  };
+}
+
+/**
+ * @param {Function} pattern
+ * @param {Function} action
+ */
+function route(pattern, action) {
+  return async function (Message) {
+    return {
+      predicate: await pattern(Message),
+      action,
     };
   };
 }
