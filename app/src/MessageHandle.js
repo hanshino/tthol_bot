@@ -2,6 +2,8 @@ const { Message } = require("discord.js");
 const EquipController = require("./controllers/EquipController");
 const KeywordController = require("./controllers/KeywordController");
 const QuestController = require("./controllers/QuestController");
+const ItemController = require("./controllers/ItemController");
+const MonsterController = require("./controllers/MonsterController");
 const memory = require("memory-cache");
 
 const router = [
@@ -26,6 +28,8 @@ const router = [
   text(/^175\s(?<number>\d{1,3})$/, QuestController.SevenStar),
   text(/^180\s(?<sum>\d{2})\s(?<leak>\d{1})/, QuestController.GodQuest),
   route(Message => KeywordController.detectKeyword(Message), KeywordController.handleSend),
+  text(/^.(物品|item)\s(?<item>\S+)$/, ItemController.showItem),
+  text(/^.(怪物|monster|npc)\s(?<monster>\S+)$/, MonsterController.showMonster),
   text("/refresh", Message => {
     memory.clear();
     Message.channel.send(`<@${Message.author.id}> 資料已刷新！`);
