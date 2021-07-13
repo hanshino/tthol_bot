@@ -66,7 +66,7 @@ async function sendItem(Message, item) {
     response.push(`掉落來源：${monsters.join("、")}`);
   }
 
-  if (item.randomAttributes.length > 0) {
+  if (item.randomAttributes) {
     response.push("隨機屬性：");
     item.randomAttributes
       .filter(data => data.attribute !== "額外")
