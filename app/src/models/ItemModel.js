@@ -3,10 +3,8 @@ const table = "items";
 const randTable = "item_rand";
 
 exports.search = keyword => {
-  return knex(table)
-    .where("name", "like", `%${keyword}%`)
-    .select("*")
-    .join(randTable, `${table}.id`, "=", `${randTable}.id`);
+  let query = knex(table).where("name", "like", `%${keyword}%`).select("*");
+  return query;
 };
 
 exports.searchById = async id => {

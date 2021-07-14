@@ -26,6 +26,10 @@ exports.showItem = async (Message, props) => {
     : await Item.search(keyword);
   let { author } = Message;
 
+  if (result.length === 0) {
+    return Message.channel.send("查無此物品，建議減少字數，僅搜尋確認的字串");
+  }
+
   if (result.length === 1) {
     return await sendItem(Message, result[0]);
   }
@@ -46,6 +50,7 @@ exports.showItem = async (Message, props) => {
     );
   }
 
+  console.log(result);
   let item = idx === -1 ? result[0] : result[idx];
   await sendItem(Message, item);
 };
