@@ -50,7 +50,6 @@ exports.showItem = async (Message, props) => {
     );
   }
 
-  console.log(result);
   let item = idx === -1 ? result[0] : result[idx];
   await sendItem(Message, item);
 };
@@ -71,7 +70,7 @@ async function sendItem(Message, item) {
     response.push(`掉落來源：${monsters.join("、")}`);
   }
 
-  if (item.randomAttributes) {
+  if (Array.isArray(item.randomAttributes) && item.randomAttributes.length !== 0) {
     response.push("隨機屬性：");
     item.randomAttributes
       .filter(data => data.attribute !== "額外")

@@ -4,6 +4,7 @@ const KeywordController = require("./controllers/KeywordController");
 const QuestController = require("./controllers/QuestController");
 const ItemController = require("./controllers/ItemController");
 const MonsterController = require("./controllers/MonsterController");
+const SkillController = require("./controllers/SkillController");
 const memory = require("memory-cache");
 
 const router = [
@@ -30,6 +31,7 @@ const router = [
   route(Message => KeywordController.detectKeyword(Message), KeywordController.handleSend),
   text(/^.(物品|item)\s(?<item>\S+)$/, ItemController.showItem),
   text(/^.(怪物|monster|npc)\s(?<monster>\S+)$/, MonsterController.showMonster),
+  text(/^.(技能|skill)\s(?<skill>\S+)(\s(?<level>\d{1,2}))?$/, SkillController.search),
   text("/refresh", Message => {
     memory.clear();
     Message.channel.send(`<@${Message.author.id}> 資料已刷新！`);
@@ -59,9 +61,7 @@ module.exports = async Message => {
 
   if (!target) return;
 
-  Message.channel.startTyping(1);
   await target.action(Message, { ...target.predicate });
-  Message.channel.stopTyping(true);
 };
 
 /**

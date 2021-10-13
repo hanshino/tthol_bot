@@ -8,15 +8,17 @@ exports.search = keyword => {
 };
 
 exports.searchById = async id => {
-  let res = await knex(table).where("id", "=", id).select("*");
+  let res = await knex(table).where("id", "=", id).select("*").first();
   let random = await knex(randTable).select("*").where("id", "=", id);
 
-  return [
-    {
-      ...res[0],
-      randomAttributes: random,
-    },
-  ];
+  return res
+    ? [
+        {
+          ...res[0],
+          randomAttributes: random,
+        },
+      ]
+    : [];
 };
 
 exports.getConfig = () => {
