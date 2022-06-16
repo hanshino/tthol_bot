@@ -64,9 +64,18 @@ function generateEmbed(target) {
 
   // 新增一些欄位說明
   let note = [
-    { name: "消耗", value: target.spend_cost },
+    { name: "距離", value: target.range },
+    { name: "消耗", value: target.spend_mp },
     { name: "僵直", value: target.stun },
-    { name: "時間", value: target.time },
+    { name: "持續時間", value: target.time },
+    { name: "傷害參數", value: target.func_dmg },
+    { name: "傷害參數1", value: target.func_dmg_p1 },
+    { name: "傷害參數2", value: target.func_dmg_p2 },
+    { name: "傷害參數3", value: target.func_dmg_p3 },
+    { name: "傷害參數4", value: target.func_dmg_p4 },
+    { name: "傷害參數5", value: target.func_dmg_p5 },
+    { name: "命中參數", value: target.func_hit },
+    { name: "命中參數1", value: target.func_hit_p1 },
   ];
   // 如果欄位不為空，就新增上去
   note.forEach(field => {
