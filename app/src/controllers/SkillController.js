@@ -67,6 +67,7 @@ function generateEmbed(target) {
     { name: "距離", value: target.range },
     { name: "消耗", value: target.spend_mp },
     { name: "僵直", value: target.stun },
+    { name: "recharge_time", value: target.recharge_time },
     { name: "持續時間", value: target.time },
     { name: "傷害參數", value: target.func_dmg },
     { name: "傷害參數1", value: target.func_dmg_p1 },
