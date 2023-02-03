@@ -5,6 +5,8 @@ services:
       context: ./app
       dockerfile: Dockerfile
     env_file: ./.env
+    volumes:
+      - /app/database:/application/database
     environment:
       - "NODE_ENV=production"
     restart: always

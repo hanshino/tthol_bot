@@ -21,7 +21,7 @@ client.on("ready", () => {
     .setFooter(new Date().toLocaleTimeString());
 
   if (!isDEV) {
-    client.channels.fetch("839773570359099434").then(channel => channel.send(embed));
+    client.users.fetch("542332441478823947").then(user => user.send(embed));
   } else {
     console.log("小幫手啟動囉！");
   }

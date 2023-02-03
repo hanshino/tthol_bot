@@ -43,25 +43,29 @@ const router = [
  * @param {Message} Message
  */
 module.exports = async Message => {
-  if (Message.author.bot) return;
-  let target = undefined;
+  try {
+    if (Message.author.bot) return;
+    let target = undefined;
 
-  for (let i = 0; i < router.length; i++) {
-    let currRoute = router[i];
-    let result = await currRoute(Message);
+    for (let i = 0; i < router.length; i++) {
+      let currRoute = router[i];
+      let result = await currRoute(Message);
 
-    if (result.predicate) {
-      target = result;
-      break;
+      if (result.predicate) {
+        target = result;
+        break;
+      }
     }
+
+    const { username } = Message.author;
+    console.log(username, Message.content);
+
+    if (!target) return;
+
+    await target.action(Message, { ...target.predicate });
+  } catch (e) {
+    console.error(e);
   }
-
-  const { username } = Message.author;
-  console.log(username, Message.content);
-
-  if (!target) return;
-
-  await target.action(Message, { ...target.predicate });
 };
 
 /**

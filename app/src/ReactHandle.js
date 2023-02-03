@@ -8,27 +8,31 @@ const router = [emoji("⏪", EquipController.ShowPre), emoji("⏩", EquipControl
  * @param {User} User
  */
 module.exports = async (MessageReaction, User) => {
-  if (MessageReaction.me) return;
-  MessageReaction.author = User;
-  let { channel } = MessageReaction.message;
+  try {
+    if (MessageReaction.me) return;
+    MessageReaction.author = User;
+    let { channel } = MessageReaction.message;
 
-  let target = undefined;
+    let target = undefined;
 
-  for (let i = 0; i < router.length; i++) {
-    let route = router[i];
-    let result = route(MessageReaction);
+    for (let i = 0; i < router.length; i++) {
+      let route = router[i];
+      let result = route(MessageReaction);
 
-    if (result.predicate) {
-      target = result;
-      break;
+      if (result.predicate) {
+        target = result;
+        break;
+      }
     }
+
+    if (!target) return;
+
+    channel.startTyping(1);
+    await target.action(MessageReaction, { ...target.predicate });
+    channel.stopTyping(true);
+  } catch (e) {
+    console.error(e);
   }
-
-  if (!target) return;
-
-  channel.startTyping(1);
-  await target.action(MessageReaction, { ...target.predicate });
-  channel.stopTyping(true);
 };
 
 function emoji(pattern, action) {
