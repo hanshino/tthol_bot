@@ -1,0 +1,30 @@
+{
+  "name": "tthol_bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/hanshino/tthol_bot.git",
+  "author": "hanshino <c0952199517@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev:build": "tsc -w",
+    "dev:start": "nodemon dist/index.js",
+    "dev": "concurrently npm:dev:*"
+  },
+  "dependencies": {
+    "discord.js": "^14.7.1",
+    "dotenv": "^16.0.3",
+    "google-spreadsheet": "^3.3.0",
+    "lodash": "^4.17.21",
+    "sequelize": "^6.29.3",
+    "sqlite3": "^5.1.4"
+  },
+  "devDependencies": {
+    "@types/google-spreadsheet": "^3.3.1",
+    "@types/lodash": "^4.14.191",
+    "concurrently": "^7.6.0",
+    "nodemon": "^2.0.21",
+    "typescript": "^4.9.5"
+  }
+}

@@ -1,12 +1,11 @@
-version: "3.5"
+version: '3.8'
+
 services:
-  discordbot:
+  discord:
     build:
-      context: ./app
+      context: .
       dockerfile: Dockerfile
-    env_file: ./.env
+    container_name: tthol_discord_bot
     volumes:
-      - /app/database:/application/database
-    environment:
-      - "NODE_ENV=production"
-    restart: always
+      - ./config:/usr/src/app/config
+      - ./database:/usr/src/app/database

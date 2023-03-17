@@ -1,0 +1,233 @@
+[
+  {
+    "key": "id",
+    "start": 1,
+    "length": 2,
+    "encode": null,
+    "note": "編號"
+  },
+  {
+    "key": "name",
+    "start": 5,
+    "length": 12,
+    "encode": "big5",
+    "note": "名稱"
+  },
+  {
+    "key": "note",
+    "start": 18,
+    "length": 13,
+    "encode": "big5",
+    "note": "備註"
+  },
+  {
+    "key": "summary",
+    "start": 31,
+    "length": 130,
+    "encode": "big5",
+    "note": "描述"
+  },
+  {
+    "key": "level",
+    "start": 192,
+    "length": 2,
+    "encode": null,
+    "note": "等級"
+  },
+  {
+    "key": "weight",
+    "start": 233,
+    "length": 2,
+    "encode": null,
+    "note": "重量"
+  },
+  {
+    "key": "hp",
+    "start": 384,
+    "length": 2,
+    "encode": null,
+    "note": "體力"
+  },
+  {
+    "key": "mp",
+    "start": 387,
+    "length": 2,
+    "encode": null,
+    "note": "真氣"
+  },
+  {
+    "key": "str",
+    "start": 390,
+    "length": 2,
+    "encode": null,
+    "note": "外功"
+  },
+  {
+    "key": "pow",
+    "start": 393,
+    "length": 2,
+    "encode": null,
+    "note": "內力"
+  },
+  {
+    "key": "vit",
+    "start": 396,
+    "length": 2,
+    "encode": null,
+    "note": "根骨"
+  },
+  {
+    "key": "dex",
+    "start": 399,
+    "length": 2,
+    "encode": null,
+    "note": "技巧"
+  },
+  {
+    "key": "agi",
+    "start": 402,
+    "length": 2,
+    "encode": null,
+    "note": "身法"
+  },
+  {
+    "key": "wis",
+    "start": 405,
+    "length": 2,
+    "encode": null,
+    "note": "玄學"
+  },
+  {
+    "key": "atk",
+    "start": 408,
+    "length": 2,
+    "encode": null,
+    "note": "物攻"
+  },
+  {
+    "key": "matk",
+    "start": 410,
+    "length": 2,
+    "encode": null,
+    "note": "內勁"
+  },
+  {
+    "key": "def",
+    "start": 412,
+    "length": 2,
+    "encode": null,
+    "note": "防禦"
+  },
+  {
+    "key": "mdef",
+    "start": 414,
+    "length": 2,
+    "encode": null,
+    "note": "護勁"
+  },
+  {
+    "key": "dodge",
+    "start": 418,
+    "length": 2,
+    "encode": null,
+    "note": "閃躲"
+  },
+  {
+    "key": "uncanny_dodge",
+    "start": 422,
+    "length": 2,
+    "encode": null,
+    "note": "拆招"
+  },
+  {
+    "key": "critical",
+    "start": 424,
+    "length": 1,
+    "encode": null,
+    "note": "重擊"
+  },
+  {
+    "key": "hit",
+    "start": 416,
+    "length": 2,
+    "encode": null,
+    "note": "命中"
+  },
+  {
+    "key": "speed",
+    "start": 442,
+    "length": 1,
+    "encode": null,
+    "note": "移動"
+  },
+  {
+    "key": "fire",
+    "start": 451,
+    "length": 1,
+    "encode": null,
+    "note": "火抗"
+  },
+  {
+    "key": "water",
+    "start": 452,
+    "length": 1,
+    "encode": null,
+    "note": "水抗"
+  },
+  {
+    "key": "thunder",
+    "start": 453,
+    "length": 1,
+    "encode": null,
+    "note": "雷抗"
+  },
+  {
+    "key": "tree",
+    "start": 454,
+    "length": 1,
+    "encode": null,
+    "note": "木抗"
+  },
+  {
+    "key": "freeze",
+    "start": 470,
+    "length": 1,
+    "encode": null,
+    "note": "抗定"
+  },
+  {
+    "key": "min_damage",
+    "start": 432,
+    "length": 2,
+    "encode": null,
+    "note": "傷害min"
+  },
+  {
+    "key": "max_damage",
+    "start": 434,
+    "length": 2,
+    "encode": null,
+    "note": "傷害max"
+  },
+  {
+    "key": "min_pdamage",
+    "start": 436,
+    "length": 2,
+    "encode": null,
+    "note": "內勁傷害min"
+  },
+  {
+    "key": "max_pdamage",
+    "start": 438,
+    "length": 2,
+    "encode": null,
+    "note": "內勁傷害max"
+  },
+  {
+    "key": "picture",
+    "start": 165,
+    "length": 2,
+    "encode": null,
+    "note": "圖片"
+  }
+]
