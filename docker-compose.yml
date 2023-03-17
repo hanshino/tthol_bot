@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  discord:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tthol_discord_bot
+    volumes:
+      - ./config:/usr/src/app/config
+      - ./database:/usr/src/app/database
