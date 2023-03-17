@@ -42,7 +42,7 @@ const execution = async (
     },
   });
 
-  if (!sqliteResult) {
+  if (sqliteResult.length === 0) {
     await interaction.editReply("找不到結果");
     return;
   }
@@ -93,6 +93,11 @@ const execution = async (
       embeds: [result],
     });
   }
+
+  console.log(
+    sqliteResult.length,
+    sqliteResult.map((row) => row.getDataValue("name"))
+  );
 
   // reply menu let user choose
   const menu = MultiResultMenuBuilder({

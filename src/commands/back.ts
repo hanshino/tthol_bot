@@ -42,7 +42,7 @@ const execution = async (
     },
   });
 
-  if (!sqliteResult) {
+  if (sqliteResult.length === 0) {
     await interaction.editReply("找不到結果");
     return;
   }
