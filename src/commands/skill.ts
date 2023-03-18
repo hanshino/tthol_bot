@@ -53,12 +53,17 @@ const execution = async (
     return;
   }
 
-  const generateResult = async (id: number) => {
+  const generateResult = async (name: string) => {
     const maxLevelSkill = results.find((result) => {
-      const isIdEqual = result.getDataValue("id") === id;
+      const isIdEqual = result.getDataValue("name") === name;
       const isLevelEqual = result.getDataValue("level") === level;
       return level ? isIdEqual && isLevelEqual : isIdEqual;
-    }) as TypeSkill;
+    });
+
+    if (!maxLevelSkill) {
+      return;
+    }
+
     const embed = new EmbedBuilder()
       .setTitle(maxLevelSkill.getDataValue("name"))
       .setDescription(maxLevelSkill.getDataValue("help"))
@@ -83,7 +88,7 @@ const execution = async (
       placeholder: "請選擇一個結果",
       options: uniqBy(results, "name").map((result) => ({
         label: result.getDataValue("name"),
-        value: `${result.getDataValue("id")}`,
+        value: result.getDataValue("name"),
         inline: true,
       })),
     };
@@ -104,7 +109,15 @@ const execution = async (
 
     collector.on("collect", async (i: StringSelectMenuInteraction) => {
       const value = i.values[0];
-      const embed = await generateResult(parseInt(value));
+      const embed = await generateResult(value);
+
+      if (!embed) {
+        await i.update({
+          content: "找不到結果",
+          components: [],
+        });
+        return;
+      }
 
       await i.update({
         content: "查詢結果",
@@ -116,7 +129,7 @@ const execution = async (
     collector.on("end", async (collected) => {
       if (collected.size === 0) {
         await interaction.editReply({
-          content: "查詢超時",
+          content: `您搜尋的 ${keyword} 沒有點選結果`,
           components: [],
         });
       }
@@ -125,7 +138,12 @@ const execution = async (
     return;
   }
 
-  const embed = await generateResult(results[0].getDataValue("id") as number);
+  const embed = await generateResult(results[0].getDataValue("name"));
+
+  if (!embed) {
+    await interaction.editReply("找不到結果");
+    return;
+  }
 
   await interaction.editReply({
     content: "查詢結果",
