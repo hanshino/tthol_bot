@@ -24,7 +24,7 @@ const execution = async (
   database: Sequelize,
   interaction: CommandInteraction
 ) => {
-  interaction.deferReply();
+  await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;
   const keyword = options.getString("keyword") as string;
   const textOnly = options.getBoolean("text_only");
