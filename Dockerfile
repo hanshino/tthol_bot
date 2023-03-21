@@ -25,6 +25,8 @@ ENV NODE_ENV production
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/bin/dumb-init /usr/bin/dumb-init
-COPY --chown=node:node --from=build /usr/src/app ./
+COPY --chown=node:node --from=build /usr/src/app/dist ./
 
-CMD ["dumb-init", "yarn", "start"]
+RUN ["yarn", "install", "--production"]
+
+CMD ["dumb-init", "node", "index.js"]
