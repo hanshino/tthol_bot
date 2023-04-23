@@ -49,11 +49,10 @@ const execution = async (
 
   const generateResult = async (row: Item) => {
     const name = row.getDataValue("name");
-    const image = get(
-      sheetResult,
-      "0.新版圖片",
-      get(sheetResult, "0.圖片網址")
-    );
+
+    // sheet result has multiple rows
+    const sheetTarget = sheetResult.find((row) => row["名稱"] === name);
+    const image = get(sheetTarget, "新版圖片", get(sheetTarget, "圖片網址"));
 
     const options = {
       title: name,
@@ -93,11 +92,6 @@ const execution = async (
       embeds: [result],
     });
   }
-
-  console.log(
-    sqliteResult.length,
-    sqliteResult.map((row) => row.getDataValue("name"))
-  );
 
   // reply menu let user choose
   const menu = MultiResultMenuBuilder({
