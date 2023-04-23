@@ -26,6 +26,8 @@ WORKDIR /usr/src/app
 
 COPY --from=build /usr/bin/dumb-init /usr/bin/dumb-init
 COPY --chown=node:node --from=build /usr/src/app/dist ./
+COPY package*.json ./
+COPY yarn.lock ./
 
 RUN ["yarn", "install", "--production"]
 
