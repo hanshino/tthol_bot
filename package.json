@@ -8,9 +8,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
-    "dev:build": "tsc -w",
-    "dev:start": "nodemon dist/index.js",
-    "dev": "concurrently npm:dev:*"
+    "dev": "nodemon index.ts"
   },
   "dependencies": {
     "discord.js": "^14.8.0",
@@ -23,8 +21,8 @@
   "devDependencies": {
     "@types/google-spreadsheet": "^3.3.1",
     "@types/lodash": "^4.14.191",
-    "concurrently": "^7.6.0",
     "nodemon": "^2.0.21",
+    "ts-node": "^10.9.1",
     "typescript": "^5.0.2"
   }
 }

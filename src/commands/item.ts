@@ -1,6 +1,7 @@
 import {
   CommandInteraction,
   CommandInteractionOptionResolver,
+  EmbedBuilder,
   Message,
   SlashCommandBuilder,
 } from "discord.js";
@@ -8,7 +9,9 @@ import { Op, Sequelize } from "sequelize";
 import driverCommand from "./driver";
 import backCommand from "./back";
 import item, { Item } from "../models/item";
+import { monster } from "../models/monster";
 import { MultiResultMenuBuilder } from "../utilities/equip/builder";
+import { chunk } from "lodash";
 const { execute: driver } = driverCommand;
 const { execute: back } = backCommand;
 
@@ -36,7 +39,37 @@ const searchItem = async (
   await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;
   const Item = item(database);
+  const Monster = monster(database);
   const keyword = options.getString("keyword") as string;
+
+  const generateResult = async (item: Item) => {
+    const embed = new EmbedBuilder()
+      .setTitle(item.getDataValue("name"))
+      .addFields(
+        { name: "種類", value: item.getDataValue("type") || "無" },
+        { name: "描述", value: item.getDataValue("summary") }
+      );
+
+    const dropMonster = await Monster.findAll({
+      where: {
+        dropItem: {
+          [Op.like]: database.literal(`'%"${item.getDataValue("id")}"%'`),
+        },
+      },
+    });
+
+    if (dropMonster.length !== 0 && dropMonster.length <= 110) {
+      const names = dropMonster.map((monster) => monster.getDataValue("name"));
+      chunk(names, 100).forEach((names, idx) =>
+        embed.addFields({
+          name: "掉落怪物" + (idx + 1),
+          value: names.join(", "),
+        })
+      );
+    }
+
+    return embed;
+  };
 
   const result = await Item.findAll({
     where: {
@@ -48,6 +81,11 @@ const searchItem = async (
 
   if (result.length === 0) {
     await interaction.editReply("找不到結果");
+    return;
+  }
+
+  if (result.length >= 25) {
+    await interaction.editReply("找到太多結果，請縮小範圍");
     return;
   }
 
@@ -77,25 +115,11 @@ const searchItem = async (
       const item = result.find(
         (item: Item) => item.getDataValue("id").toString() === value
       ) as Item;
+      const embed = await generateResult(item);
 
       await i.update({
         content: `查詢結果: ${item.getDataValue("name")}`,
-        embeds: [
-          {
-            title: item.getDataValue("name"),
-            description: item.getDataValue("description"),
-            fields: [
-              {
-                name: "種類",
-                value: item.getDataValue("type"),
-              },
-              {
-                name: "描述",
-                value: item.getDataValue("summary"),
-              },
-            ],
-          },
-        ],
+        embeds: [embed],
         components: [],
       });
     });
@@ -114,24 +138,10 @@ const searchItem = async (
   }
 
   const [row] = result;
+  const embed = await generateResult(row);
   await interaction.editReply({
     content: `查詢結果: ${row.getDataValue("name")}`,
-    embeds: [
-      {
-        title: row.getDataValue("name"),
-        description: row.getDataValue("description"),
-        fields: [
-          {
-            name: "種類",
-            value: row.getDataValue("type") || "無",
-          },
-          {
-            name: "描述",
-            value: row.getDataValue("summary"),
-          },
-        ],
-      },
-    ],
+    embeds: [embed],
   });
 };
 

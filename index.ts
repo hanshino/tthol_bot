@@ -7,8 +7,8 @@ if (fs.existsSync(".env")) {
   dotenv.config();
 }
 
-// Load all commands
 (async () => {
+  // Load all commands
   await registerCommands();
   await registerEvents();
 })();

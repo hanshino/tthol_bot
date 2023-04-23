@@ -6,6 +6,9 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: tthol_discord_bot
+    restart: always
+    env_file:
+      - .env
     volumes:
       - ./config:/usr/src/app/config
       - ./database:/usr/src/app/database
