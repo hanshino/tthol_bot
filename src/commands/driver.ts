@@ -38,7 +38,8 @@ const execution = async (
       name: {
         [Op.like]: `%${keyword}%`,
       },
-      type: "座騎",
+      // items.type_name holds English codes now; 座騎 is HORSE (656 rows).
+      type: "HORSE",
     },
   });
 

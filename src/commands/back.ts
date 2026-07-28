@@ -38,7 +38,9 @@ const execution = async (
       name: {
         [Op.like]: `%${keyword}%`,
       },
-      type: "背飾",
+      // items.type_name holds English codes now; 背飾 is WING (620 rows).
+      // NOT ORNAMENT — that is the 左/中/右飾 slots.
+      type: "WING",
     },
   });
 
