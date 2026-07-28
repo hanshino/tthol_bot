@@ -2,6 +2,17 @@ import { DataTypes, Model, Sequelize } from "sequelize";
 
 export class Item extends Model {}
 
+// The `items` table was renamed under this model between 2023 and 2026 (tthol-data
+// migrations). Sequelize SELECTs every declared attribute, so a single stale name
+// fails the whole query -- the symptom was `no such column: type` on /item.
+//
+// Only `type`, `level` and `picture` are actually read by any command, so they are
+// mapped to their current columns. The 13 combat-stat attributes that used to be
+// declared here (def, mdef, critical, speed, fire, water, thunder, tree, freeze,
+// min_damage, max_damage, min_pdamage, max_pdamage) were never read anywhere and are
+// dropped rather than guessed at: `speed` has three plausible columns now
+// (attack_speed / walk_speed / run_speed) and `freeze` has no counterpart at all.
+// To bring one back, add it with the real column name from `PRAGMA table_info(items)`.
 export default (sequelize: Sequelize) =>
   Item.init(
     {
@@ -20,6 +31,7 @@ export default (sequelize: Sequelize) =>
       type: {
         type: DataTypes.STRING,
         allowNull: false,
+        field: "type_name",
       },
       summary: {
         type: DataTypes.STRING,
@@ -28,6 +40,7 @@ export default (sequelize: Sequelize) =>
       level: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        field: "base_lv",
       },
       weight: {
         type: DataTypes.INTEGER,
@@ -73,14 +86,6 @@ export default (sequelize: Sequelize) =>
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      def: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      mdef: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
       dodge: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -89,57 +94,14 @@ export default (sequelize: Sequelize) =>
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      critical: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
       hit: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      speed: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      fire: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      water: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      thunder: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      tree: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      freeze: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      min_damage: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      max_damage: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      min_pdamage: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      max_pdamage: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
       picture: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        field: "icon",
       },
     },
     {
