@@ -14,6 +14,8 @@ RUN yarn install
 # Copy source files
 COPY . .
 
+RUN test -f config/credential.json || cp config/credential.example.json config/credential.json
+
 # Build the app
 RUN yarn build
 
@@ -21,11 +23,12 @@ RUN yarn build
 FROM node:lts-bullseye-slim
 
 USER node
-ENV NODE_ENV production
+ENV NODE_ENV=production
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/bin/dumb-init /usr/bin/dumb-init
 COPY --chown=node:node --from=build /usr/src/app/dist ./
+COPY --chown=node:node --from=build /usr/src/app/config ./config
 COPY package*.json ./
 COPY yarn.lock ./
 
