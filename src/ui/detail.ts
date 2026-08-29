@@ -106,7 +106,10 @@ export function buildItemDetail(item: ItemDetail, opts: DetailOptions = {}): Con
   addHeading(
     c,
     [h2(escapeInline(item.name)), metaLine(item.typeLabel, item.level > 0 ? `Lv${item.level}` : null)],
-    item.imageUrl ?? item.iconUrl
+    // ponytail: iconUrl 才是完整的物品圖示（40x40 居多）；imageUrl 取自
+    // item_images.gicon，實際是地上掉落物的貼圖，矮一截又多半不是方形，
+    // 當縮圖會歪掉。只有少數沒有 icon 的物品才退回 gicon。
+    item.iconUrl ?? item.imageUrl
   );
 
   c.addSeparatorComponents(spacer());
