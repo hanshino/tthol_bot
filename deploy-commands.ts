@@ -36,12 +36,11 @@ const rest = new REST({ version: "10" }).setToken(token);
   try {
     console.log("Started refreshing application (/) commands.");
 
-    console.log("Deleting old commands...");
-    await rest.put(Routes.applicationCommands(clientId), {
-      body: [],
-    });
-
-    console.log("Registering new commands...");
+    // ponytail: this PUT already overwrites the whole global command list —
+    // anything not in the body is removed. Sending `body: []` first only
+    // deleted every command so the second call had to recreate them all with
+    // fresh IDs, which invalidates every client's cached command and shows
+    // "Unknown Integration" until each user reloads. One call keeps IDs stable.
     await rest.put(Routes.applicationCommands(clientId), {
       body: commands,
     });
