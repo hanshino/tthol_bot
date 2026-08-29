@@ -98,17 +98,25 @@ const execution = async (
   }
 
   // reply menu let user choose
+  // ponytail: value must be the id — names repeat in items (城堡大白鯨 ×2,
+  // 熊貓娃娃車 ×4), and duplicate option values make Discord reject the
+  // whole payload with 50035. Discord also caps a select menu at 25.
+  const MENU_LIMIT = 25;
+  const shown = sqliteResult.slice(0, MENU_LIMIT);
   const menu = MultiResultMenuBuilder({
     customId: "driver",
     placeholder: "請選擇要查詢的座騎",
-    options: sqliteResult.map((row) => ({
+    options: shown.map((row) => ({
       label: row.getDataValue("name"),
-      value: row.getDataValue("name"),
+      value: `${row.getDataValue("id")}`,
     })),
   });
 
   const message = await interaction.editReply({
-    content: "查詢到多個結果，請選擇要查詢的座騎",
+    content:
+      sqliteResult.length > MENU_LIMIT
+        ? `查詢到 ${sqliteResult.length} 個結果，以下列出前 ${MENU_LIMIT} 個，請縮小關鍵字範圍`
+        : "查詢到多個結果，請選擇要查詢的座騎",
     components: [menu],
   });
 
@@ -124,7 +132,7 @@ const execution = async (
 
   collector.on("collect", async (i) => {
     const value = i.values[0];
-    const row = sqliteResult.find((row) => row.getDataValue("name") === value);
+    const row = shown.find((row) => `${row.getDataValue("id")}` === value);
     const result = await generateResult(row as Item);
 
     if (typeof result === "string") {
