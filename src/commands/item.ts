@@ -128,17 +128,35 @@ const command = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("back")
+        .setNameLocalizations({ "zh-TW": "背飾" })
         .setDescription("查找背飾資訊")
+        .setDescriptionLocalizations({ "zh-TW": "查詢背飾資訊" })
         .addStringOption((option) =>
-          option.setName("keyword").setDescription("關鍵字").setRequired(true).setMinLength(1).setMaxLength(10),
+          option
+            .setName("keyword")
+            .setNameLocalizations({ "zh-TW": "關鍵字" })
+            .setDescription("關鍵字")
+            .setDescriptionLocalizations({ "zh-TW": "關鍵字" })
+            .setRequired(true)
+            .setMinLength(1)
+            .setMaxLength(10),
         ),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("driver")
+        .setNameLocalizations({ "zh-TW": "座騎" })
         .setDescription("查找座騎資訊")
+        .setDescriptionLocalizations({ "zh-TW": "查詢座騎資訊" })
         .addStringOption((option) =>
-          option.setName("keyword").setDescription("關鍵字").setRequired(true).setMinLength(1).setMaxLength(10),
+          option
+            .setName("keyword")
+            .setNameLocalizations({ "zh-TW": "關鍵字" })
+            .setDescription("關鍵字")
+            .setDescriptionLocalizations({ "zh-TW": "關鍵字" })
+            .setRequired(true)
+            .setMinLength(1)
+            .setMaxLength(10),
         ),
     ),
   execute: execution,

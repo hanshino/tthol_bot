@@ -174,6 +174,31 @@ export function buildMonsterDetail(
 // ─── 技能 ────────────────────────────────────────────────────
 
 /**
+ * 等級選單以當前等級為中心開一個 25 格視窗。
+ *
+ * select 最多 25 個 option，但截斷點固定在開頭會出事：
+ * id=553「雙刀反擊」有 33 級（lv1~46，不連續），使用者從搜尋進來是最高的 lv46，
+ * 取前 25 個的話連 lv46 自己都不在選單裡，26 級以後永遠選不到。
+ *
+ * 視窗貼邊時往另一側補滿，所以永遠是滿 25 格；slice 保序，等級維持遞增。
+ * 等級數 ≤25 時原樣回傳，行為與修正前完全相同。
+ */
+function levelWindow(levels: number[], current: number): number[] {
+  if (levels.length <= LIMITS.selectOption) return levels;
+
+  const sorted = [...levels].sort((a, b) => a - b);
+  // 找不到當前等級就從頭開始，至少不會是空的
+  const anchor = Math.max(0, sorted.indexOf(current));
+  const half = Math.floor(LIMITS.selectOption / 2);
+  const start = Math.min(
+    Math.max(0, anchor - half),
+    sorted.length - LIMITS.selectOption
+  );
+
+  return sorted.slice(start, start + LIMITS.selectOption);
+}
+
+/**
  * 等級切換。5 級以內排成按鈕，一眼看得到現在在哪一級；
  * 更多就收進下拉，避免佔掉兩三列。
  */
@@ -181,8 +206,19 @@ function addLevelSwitcher(c: ContainerBuilder, skill: SkillDetail, ownerId?: str
   const levels = skill.availableLevels;
   if (levels.length <= 1) return;
 
+  const shown = levelWindow(levels, skill.level);
+  const truncated = shown.length < levels.length;
+
   c.addSeparatorComponents(divider());
-  c.addTextDisplayComponents(text(subtext(`共 ${levels.length} 個等級`)));
+  c.addTextDisplayComponents(
+    text(
+      subtext(
+        truncated
+          ? `共 ${levels.length} 個等級，目前顯示 Lv${shown[0]}~Lv${shown[shown.length - 1]}`
+          : `共 ${levels.length} 個等級`
+      )
+    )
+  );
 
   if (levels.length <= LIMITS.buttonsPerRow) {
     c.addActionRowComponents(
@@ -200,7 +236,7 @@ function addLevelSwitcher(c: ContainerBuilder, skill: SkillDetail, ownerId?: str
 
   c.addActionRowComponents(
     entrySelect(
-      levels.slice(0, LIMITS.selectOption).map((lv) => ({
+      shown.map((lv) => ({
         id: skill.id,
         title: `Lv${lv}${lv === skill.level ? "（目前）" : ""}`,
         route: { kind: "skill" as const, id: skill.id, action: "detail" as const, level: lv },

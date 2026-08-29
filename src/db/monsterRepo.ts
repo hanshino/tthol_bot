@@ -6,7 +6,7 @@ import { toMonsterGroups } from "../domain/stats";
 export function createMonsterRepo(db: Sequelize) {
   return {
     async getById(id: number): Promise<MonsterDetail | null> {
-      const a: any[] = await db.query("SELECT n.*,m.drop_item, m.pdamage_min AS pdamage_min, m.pdamage_max AS pdamage_max FROM npc n LEFT JOIN monsters m ON m.id=n.id WHERE n.id=:id", { replacements: { id }, type: QueryTypes.SELECT });
+      const a: any[] = await db.query("SELECT n.*,m.drop_item, m.pdamage_min AS pdamage_min, m.pdamage_max AS pdamage_max FROM npc n LEFT JOIN monsters m ON m.id=n.id WHERE n.id=:id AND n.is_monster=1", { replacements: { id }, type: QueryTypes.SELECT });
       const r = a[0];
       if (!r) return null;
       const im: any[] = await db.query("SELECT url FROM npc_images WHERE npc_id=:id ORDER BY shape_key LIMIT 1", { replacements: { id }, type: QueryTypes.SELECT });

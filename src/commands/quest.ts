@@ -1,15 +1,13 @@
 import {
-  bold,
   codeBlock,
   ChatInputCommandInteraction,
   CommandInteractionOptionResolver,
-  EmbedBuilder,
-  inlineCode,
-  italic,
+  MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
 import { Sequelize } from "sequelize";
-import { padStart, cloneDeep, chunk } from "lodash";
+import { padStart, cloneDeep } from "lodash";
+import { container, failed, palette, text, validateMessage } from "../ui";
 
 const forestRooms = ["魁", "晶", "阜", "寶", "彤", "牡", "蒼", "岡"];
 const matrix = [
@@ -105,6 +103,18 @@ const execution = async (
   }
 };
 
+const safe = (payload: object) => ({ ...payload, allowedMentions: { parse: [] } });
+
+const replyContainer = async (interaction: ChatInputCommandInteraction, c: unknown) => {
+  const problems = validateMessage(c);
+  if (problems.length) {
+    console.error("Invalid UI message:", problems);
+    await interaction.editReply(safe(failed("解謎")));
+    return;
+  }
+  await interaction.editReply(safe({ components: [c], flags: MessageFlags.IsComponentsV2 }));
+};
+
 async function sevenstar(interaction: ChatInputCommandInteraction) {
   const options = interaction.options as CommandInteractionOptionResolver;
   const number = options.getInteger("number") as number;
@@ -121,7 +131,9 @@ async function sevenstar(interaction: ChatInputCommandInteraction) {
     "==================",
   ];
 
-  await interaction.editReply(codeBlock(messages.join("\n")));
+  const c = container(palette.indigo);
+  c.addTextDisplayComponents(text(`## 七星迷陣任務解謎\n-# 提示數字：${number}\n${codeBlock(messages.join("\n"))}`));
+  await replyContainer(interaction, c);
 }
 
 async function forest(interaction: ChatInputCommandInteraction) {
@@ -175,35 +187,19 @@ async function forest(interaction: ChatInputCommandInteraction) {
     limit++;
 
     if (limit > maxLimit) {
-      await interaction.editReply("無法解出答案");
+      await interaction.editReply(safe({ content: "無法解出答案" }));
       return;
     }
   } while (result.some((room) => room.value === -1));
 
-  const embed = new EmbedBuilder()
-    .setTitle("迷霧森林任務解謎")
-    .setDescription(
-      `任務提示數字總和：${sum} \n固定房間：${inlineCode(
-        room1
-      )} ${number1} ${inlineCode(room2)} ${number2}`
-    )
-    .addFields({
-      name: "好複製版",
-      value: result.map((room) => `${room.name}${room.value}`).join(" "),
-    })
-    .setTimestamp();
-
-  chunk(result, 3).forEach((rooms) =>
-    embed.addFields(
-      rooms.map((room) => ({
-        name: room.name,
-        value: room.value.toString(),
-        inline: true,
-      }))
-    )
-  );
-
-  await interaction.editReply({ embeds: [embed] });
+  const c = container(palette.celadon);
+  const grid = result.reduce<string[]>((rows, room, index) => {
+    if (index % 3 === 0) rows.push("");
+    rows[rows.length - 1] += `${room.name}${room.value} `;
+    return rows;
+  }, []).map((row) => row.trim()).join("\n");
+  c.addTextDisplayComponents(text(`## 迷霧森林任務解謎\n-# 提示數字總和：${sum} · 固定房間：${room1} ${number1}、${room2} ${number2}\n### 好複製版\n${codeBlock(result.map((room) => `${room.name}${room.value}`).join(" "))}\n### 九宮格\n${codeBlock(grid)}`));
+  await replyContainer(interaction, c);
 }
 
 async function godquest(interaction: ChatInputCommandInteraction) {
@@ -213,20 +209,16 @@ async function godquest(interaction: ChatInputCommandInteraction) {
   const result = getGodQuestResult(sum, leak);
 
   if (result.length === 0) {
-    await interaction.editReply("無法解出答案，請檢查任務提示");
+    await interaction.editReply(safe({ content: "無法解出答案，請檢查任務提示" }));
     return;
   }
 
   const [finalResult] = result;
   const message = genGodQuestMessage(finalResult);
 
-  await interaction.editReply(
-    [
-      bold("神武禁地任務解謎"),
-      italic(`${sum}卦 缺口${leak}`),
-      codeBlock(message),
-    ].join("\n")
-  );
+  const c = container(palette.plum);
+  c.addTextDisplayComponents(text(`## 神武禁地任務解謎\n-# ${sum}卦 · 缺口${leak}\n${codeBlock(message)}`));
+  await replyContainer(interaction, c);
 }
 
 function getGodQuestResult(sum: number, leak: number) {
@@ -327,15 +319,21 @@ export default {
   name: "quest",
   data: new SlashCommandBuilder()
     .setName("quest")
+    .setNameLocalizations({ "zh-TW": "任務" })
     .setDescription("各種任務解謎小工具")
+    .setDescriptionLocalizations({ "zh-TW": "各種任務解謎小工具" })
     .addSubcommand((subcommand) =>
       subcommand
         .setName("sevenstar")
+        .setNameLocalizations({ "zh-TW": "七星迷陣" })
         .setDescription("腳踩七星，七星迷陣任務解謎")
+        .setDescriptionLocalizations({ "zh-TW": "腳踩七星的任務解謎" })
         .addIntegerOption((option) =>
           option
             .setName("number")
+            .setNameLocalizations({ "zh-TW": "數字" })
             .setDescription("任務提示數字")
+            .setDescriptionLocalizations({ "zh-TW": "任務提示數字" })
             .setRequired(true)
             .setMinValue(1)
             .setMaxValue(127)
@@ -344,18 +342,24 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("forest")
+        .setNameLocalizations({ "zh-TW": "迷霧森林" })
         .setDescription("迷霧森林任務解謎")
+        .setDescriptionLocalizations({ "zh-TW": "迷霧森林任務解謎" })
         .addIntegerOption((option) =>
           option
             .setName("sum")
+            .setNameLocalizations({ "zh-TW": "總和" })
             .setDescription("總和提示，通常是 15 or 12")
+            .setDescriptionLocalizations({ "zh-TW": "總和提示，通常是 15 或 12" })
             .setRequired(true)
             .addChoices({ name: "15", value: 15 }, { name: "12", value: 12 })
         )
         .addStringOption((option) =>
           option
             .setName("room1")
+            .setNameLocalizations({ "zh-TW": "房間一" })
             .setDescription("第一間房間提示")
+            .setDescriptionLocalizations({ "zh-TW": "第一間房間提示" })
             .setRequired(true)
             .addChoices(
               ...forestRooms.map((room) => ({ name: room, value: room }))
@@ -364,7 +368,9 @@ export default {
         .addIntegerOption((option) =>
           option
             .setName("number1")
+            .setNameLocalizations({ "zh-TW": "數字一" })
             .setDescription("第一間房間提示數字")
+            .setDescriptionLocalizations({ "zh-TW": "第一間房間提示數字" })
             .setRequired(true)
             .setMinValue(1)
             .setMaxValue(9)
@@ -372,7 +378,9 @@ export default {
         .addStringOption((option) =>
           option
             .setName("room2")
+            .setNameLocalizations({ "zh-TW": "房間二" })
             .setDescription("第二間房間提示")
+            .setDescriptionLocalizations({ "zh-TW": "第二間房間提示" })
             .setRequired(true)
             .addChoices(
               ...forestRooms.map((room) => ({ name: room, value: room }))
@@ -381,7 +389,9 @@ export default {
         .addIntegerOption((option) =>
           option
             .setName("number2")
+            .setNameLocalizations({ "zh-TW": "數字二" })
             .setDescription("第二間房間提示數字")
+            .setDescriptionLocalizations({ "zh-TW": "第二間房間提示數字" })
             .setRequired(true)
             .setMinValue(1)
             .setMaxValue(9)
@@ -390,11 +400,15 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("godquest")
+        .setNameLocalizations({ "zh-TW": "神武禁地" })
         .setDescription("神武禁地任務解謎")
+        .setDescriptionLocalizations({ "zh-TW": "神武禁地任務解謎" })
         .addIntegerOption((option) =>
           option
             .setName("sum")
+            .setNameLocalizations({ "zh-TW": "總和" })
             .setDescription("幾卦（總和）")
+            .setDescriptionLocalizations({ "zh-TW": "幾卦（總和）" })
             .setRequired(true)
             .setMinValue(17)
             .setMaxValue(23)
@@ -402,7 +416,9 @@ export default {
         .addIntegerOption((option) =>
           option
             .setName("leak")
+            .setNameLocalizations({ "zh-TW": "缺口" })
             .setDescription("缺口")
+            .setDescriptionLocalizations({ "zh-TW": "缺口" })
             .setRequired(true)
             .setMinValue(1)
             .setMaxValue(9)

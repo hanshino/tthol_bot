@@ -57,7 +57,20 @@ export function decode(customId: string): { route: Route; ownerId?: string } | n
   } catch { return null; }
 }
 
-export interface PageQuery { kind: "item" | "monster" | "skill"; keyword: string }
+export interface PageQuery { kind: "item" | "monster" | "skill" | "achSubCat" | "achSearch"; keyword: string }
+
+/**
+ * kind → 單字元前綴。achSubCat 的 keyword 是 String(subCatId)，其餘是關鍵字。
+ * ponytail: 這個 map 是唯一真實來源，反查表與正規表達式都從它推導，
+ * 加新 kind 不會漏改其中一處。
+ */
+const PAGE_KINDS = { item: "i", monster: "m", skill: "s", achSubCat: "c", achSearch: "a" } as const;
+const PAGE_KIND_BY_CHAR = Object.fromEntries(
+  Object.entries(PAGE_KINDS).map(([kind, char]) => [char, kind]),
+) as Record<string, PageQuery["kind"]>;
+const PAGE_TOKEN = new RegExp(`^[${Object.values(PAGE_KINDS).join("")}][A-Za-z0-9_-]*$`);
+/** 舊 q<JSON> token 只可能是這三種，成就從來沒用過舊格式 */
+const LEGACY_KINDS = ["item", "monster", "skill"];
 
 /**
  * Stateless compact token.  The kind is one byte and only the keyword is
@@ -76,7 +89,8 @@ export function encodePageToken(query: PageQuery): string {
   if (Buffer.byteLength(query.keyword, "utf8") > MAX_PAGE_KEYWORD_BYTES) {
     throw new Error(`分頁關鍵字過長，請縮短關鍵字（最多 ${MAX_PAGE_KEYWORD_BYTES} UTF-8 bytes）`);
   }
-  const kind = { item: "i", monster: "m", skill: "s" }[query.kind];
+  const kind = PAGE_KINDS[query.kind];
+  if (!kind) throw new Error(`未知的分頁類型：${query.kind}`);
   const token = `${kind}${Buffer.from(query.keyword, "utf8").toString("base64url")}`;
   validatePageTokenBudget(token);
   return token;
@@ -93,13 +107,13 @@ export function decodePage(customId: string): { token: string; page: number; own
 
 export function decodePageQuery(token: string): PageQuery | null {
   try {
-    const kind = ({ i: "item", m: "monster", s: "skill" } as Record<string, PageQuery["kind"]>)[token[0]];
-    if (kind && /^[ims][A-Za-z0-9_-]*$/.test(token)) {
+    const kind = PAGE_KIND_BY_CHAR[token[0]];
+    if (kind && PAGE_TOKEN.test(token)) {
       return { kind, keyword: Buffer.from(token.slice(1), "base64url").toString("utf8") };
     }
     // Keep already-rendered messages made by the previous encoder usable.
     if (!token.startsWith("q")) return null;
     const value = JSON.parse(Buffer.from(token.slice(1), "base64url").toString("utf8"));
-    return value && ["item", "monster", "skill"].includes(value.kind) && typeof value.keyword === "string" ? value : null;
+    return value && LEGACY_KINDS.includes(value.kind) && typeof value.keyword === "string" ? value : null;
   } catch { return null; }
 }

@@ -1,174 +1,140 @@
 import {
   ChatInputCommandInteraction,
   CommandInteractionOptionResolver,
-  ComponentType,
-  EmbedBuilder,
+  MessageFlags,
   SlashCommandBuilder,
-  StringSelectMenuInteraction,
 } from "discord.js";
-import { Op, Sequelize } from "sequelize";
-import skill, { Skill as TypeSkill } from "../models/skill";
-import { MultiResultMenuBuilder } from "../utilities/equip/builder";
-import { uniqBy, uniq } from "lodash";
-
-const note = [
-  { name: "距離", value: "range" },
-  { name: "消耗", value: "spendMp" },
-  { name: "僵直", value: "stun" },
-  { name: "recharge_time", value: "rechargeTime" },
-  { name: "持續時間(ms)", value: "time" },
-  { name: "傷害參數", value: "funcDmg" },
-  { name: "傷害參數1", value: "funcDmgP1" },
-  { name: "傷害參數2", value: "funcDmgP2" },
-  { name: "傷害參數3", value: "funcDmgP3" },
-  { name: "傷害參數4", value: "funcDmgP4" },
-  { name: "傷害參數5", value: "funcDmgP5" },
-  { name: "命中參數", value: "funcHit" },
-  { name: "命中參數1", value: "funcHitP1" },
-];
-
-const execution = async (
-  database: Sequelize,
-  interaction: ChatInputCommandInteraction
+import { Sequelize } from "sequelize";
+import { createSkillRepo } from "../db/skillRepo";
+import {
+  buildResultList,
+  buildSkillDetail,
+  failed,
+  notFound,
+  validateMessage,
+} from "../ui";
+import { encodePageToken } from "../routing/customId";
+const safe = (payload: object) => ({
+  ...payload,
+  allowedMentions: { parse: [] },
+});
+const replyContainer = async (
+  interaction: ChatInputCommandInteraction,
+  container: unknown,
 ) => {
-  await interaction.deferReply();
-  const options = interaction.options as CommandInteractionOptionResolver;
-  const keyword = options.getString("keyword") as string;
-  const level = options.getInteger("level") as number;
-  const Skill = skill(database);
-
-  const results = await Skill.findAll({
-    order: [["level", "DESC"]],
-    where: {
-      name: {
-        [Op.like]: `%${keyword}%`,
-      },
-    },
-  });
-
-  const names = uniq(results.map((result) => result.getDataValue("name")));
-
-  if (names.length === 0) {
-    await interaction.editReply("找不到結果");
-    return;
+  const problems = validateMessage(container);
+  if (problems.length) {
+    console.error("Invalid UI message:", problems);
+    return interaction.reply(
+      safe({ ...failed("查詢"), flags: MessageFlags.Ephemeral }),
+    );
   }
-
-  const generateResult = async (name: string) => {
-    const maxLevelSkill = results.find((result) => {
-      const isIdEqual = result.getDataValue("name") === name;
-      const isLevelEqual = result.getDataValue("level") === level;
-      return level ? isIdEqual && isLevelEqual : isIdEqual;
-    });
-
-    if (!maxLevelSkill) {
-      return;
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(maxLevelSkill.getDataValue("name"))
-      .setDescription(maxLevelSkill.getDataValue("help"))
-      .addFields({
-        name: "等級",
-        value: `${maxLevelSkill.getDataValue("level")}`,
-      });
-
-    note.forEach((note) => {
-      const value = maxLevelSkill.getDataValue(note.value);
-      if (value) {
-        embed.addFields({ name: note.name, value: `${value}`, inline: true });
-      }
-    });
-
-    return embed;
-  };
-
-  if (names.length > 1) {
-    const menuOptions = {
-      customId: "skill",
-      placeholder: "請選擇一個結果",
-      options: uniqBy(results, "name").map((result) => ({
-        label: result.getDataValue("name"),
-        value: result.getDataValue("name"),
-        inline: true,
-      })),
-    };
-    const menu = MultiResultMenuBuilder(menuOptions);
-
-    const message = await interaction.editReply({
-      content: "找到多個結果，請選擇一個",
-      components: [menu],
-    });
-
-    const filter = (i: StringSelectMenuInteraction) => i.customId === "skill";
-
-    const collector = message.createMessageComponentCollector({
-      filter,
-      componentType: ComponentType.StringSelect,
-      time: 15000,
-    });
-
-    collector.on("collect", async (i: StringSelectMenuInteraction) => {
-      const value = i.values[0];
-      const embed = await generateResult(value);
-
-      if (!embed) {
-        await i.update({
-          content: "找不到結果",
-          components: [],
-        });
-        return;
-      }
-
-      await i.update({
-        content: "查詢結果",
-        embeds: [embed],
-        components: [],
-      });
-    });
-
-    collector.on("end", async (collected) => {
-      if (collected.size === 0) {
-        await interaction.editReply({
-          content: `您搜尋的 ${keyword} 沒有點選結果`,
-          components: [],
-        });
-      }
-    });
-
-    return;
-  }
-
-  const embed = await generateResult(results[0].getDataValue("name"));
-
-  if (!embed) {
-    await interaction.editReply("找不到結果");
-    return;
-  }
-
-  await interaction.editReply({
-    content: "查詢結果",
-    embeds: [embed],
-    components: [],
-  });
+  return interaction.reply(
+    safe({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+    }),
+  );
 };
-
+const replyDetail = async (
+  database: Sequelize,
+  interaction: ChatInputCommandInteraction,
+  id: number,
+  level: number,
+) => {
+  const data = await createSkillRepo(database).getByIdLevel(id, level);
+  if (!data) return interaction.reply(safe(notFound(`${id}:${level}`)));
+  return replyContainer(
+    interaction,
+    buildSkillDetail(data, { ownerId: interaction.user.id }),
+  );
+};
+const search = async (
+  database: Sequelize,
+  interaction: ChatInputCommandInteraction,
+) => {
+  const options = interaction.options as CommandInteractionOptionResolver;
+  const keyword = options.getString("keyword") ?? "";
+  const repo = createSkillRepo(database);
+  const selected = keyword.match(/^(\d+):(\d+)$/);
+  if (selected) {
+    return replyDetail(
+      database,
+      interaction,
+      Number(selected[1]),
+      Number(selected[2]),
+    );
+  }
+  if (/^\d+$/.test(keyword)) {
+    const levels: any[] = await repo.levels(Number(keyword));
+    if (!levels[0]) return interaction.reply(safe(notFound(keyword)));
+    return replyDetail(database, interaction, Number(keyword), Number(levels[0].level));
+  }
+  const requested = options.getInteger("level");
+  const rows: any[] = await repo.search(keyword);
+  if (!rows.length) return interaction.reply(safe(notFound(keyword)));
+  // ponytail: 指定 level 時沿用既有行為，取搜尋結果第一個技能，避免擴大需求。
+  if (requested !== null) {
+    return replyDetail(database, interaction, Number(rows[0].id), requested);
+  }
+  if (rows.length === 1) {
+    return replyDetail(database, interaction, Number(rows[0].id), Number(rows[0].level));
+  }
+  const totalPages = Math.ceil(rows.length / 25);
+  const container = buildResultList({
+    title: `搜尋「${keyword}」`,
+    entries: rows.slice(0, 25).map((row) => ({
+      id: Number(row.id),
+      title: row.name,
+      subtitle: `Lv${row.level}`,
+      route: {
+        kind: "skill" as const,
+        id: Number(row.id),
+        action: "detail" as const,
+        level: Number(row.level),
+      },
+    })),
+    token: encodePageToken({ kind: "skill", keyword }),
+    page: 1,
+    totalPages,
+    total: rows.length,
+    ownerId: interaction.user.id,
+  });
+  return replyContainer(interaction, container);
+};
 const command = {
   name: "skill",
   data: new SlashCommandBuilder()
     .setName("skill")
-    .setDescription("查找技能資訊")
-    .addStringOption((option) =>
-      option.setName("keyword").setDescription("關鍵字").setRequired(true)
-    )
-    .addIntegerOption((option) =>
-      option
-        .setName("level")
-        .setDescription("等級")
-        .setRequired(false)
-        .setMinValue(1)
-        .setMaxValue(20)
+    .setNameLocalizations({ "zh-TW": "技能" })
+    .setDescription("查詢技能資訊")
+    .setDescriptionLocalizations({ "zh-TW": "查詢技能資訊" })
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("search")
+        .setNameLocalizations({ "zh-TW": "查詢" })
+        .setDescription("查詢技能資訊")
+        .setDescriptionLocalizations({ "zh-TW": "查詢技能資訊" })
+        .addStringOption((option) =>
+          option
+            .setName("keyword")
+            .setNameLocalizations({ "zh-TW": "關鍵字" })
+            .setDescription("關鍵字")
+            .setDescriptionLocalizations({ "zh-TW": "關鍵字" })
+            .setRequired(true)
+            .setMaxLength(10)
+            .setAutocomplete(true),
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName("level")
+            .setNameLocalizations({ "zh-TW": "等級" })
+            .setDescription("等級")
+            .setRequired(false)
+            .setMinValue(1)
+            .setMaxValue(80),
+        ),
     ),
-  execute: execution,
+  execute: search,
 };
-
 export default command;
