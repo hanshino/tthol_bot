@@ -1,4 +1,4 @@
-FROM node:lts AS build
+FROM node:lts-trixie AS build
 
 # Install dumb-init
 RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
@@ -20,7 +20,9 @@ RUN test -f config/credential.json || cp config/credential.example.json config/c
 RUN yarn build
 
 # Run the app
-FROM node:lts-bullseye-slim
+# ponytail: trixie (glibc 2.41) is required — sqlite3 v6's arm64 prebuilt binary
+# needs GLIBC_2.38, which bullseye (2.31) and bookworm (2.36) do not provide.
+FROM node:lts-trixie-slim
 
 USER node
 ENV NODE_ENV=production
