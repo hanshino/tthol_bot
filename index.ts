@@ -4,7 +4,7 @@ import client from "./src/app";
 import path from "path";
 
 if (fs.existsSync(".env")) {
-  dotenv.config();
+  dotenv.config({ quiet: true });
 }
 
 (async () => {

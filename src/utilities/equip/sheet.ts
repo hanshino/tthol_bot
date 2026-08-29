@@ -1,8 +1,20 @@
 import { GoogleSpreadsheet } from "google-spreadsheet";
+import { JWT } from "google-auth-library";
 import credential from "../../../config/credential.json";
 
 const documentId = "1I4TjN0yWh72syHHAzLcwkA-l-PKb5KMzev3cdBNsZLE";
-const doc = new GoogleSpreadsheet(documentId);
+const auth = new JWT({
+  email: credential.client_email,
+  key: credential.private_key,
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+});
+const doc = new GoogleSpreadsheet(documentId, auth);
+
+export interface EquipSheetRow {
+  "名稱": string;
+  "新版圖片"?: string;
+  "圖片網址"?: string;
+}
 
 type SheetType = "driver" | "back" | "mid" | "left" | "right" | "hat";
 const sheetIdMap = {
@@ -15,20 +27,12 @@ const sheetIdMap = {
 };
 
 async function makeSureLoaded() {
-  await authenticate();
   await doc.loadInfo();
 }
 
-export const authenticate = () => {
-  return doc.useServiceAccountAuth({
-    client_email: credential.client_email,
-    private_key: credential.private_key,
-  });
-};
-
 export const sheetByType = async (type: SheetType) => {
   await makeSureLoaded();
-  return doc.sheetsById[sheetIdMap[type]];
+  return doc.sheetsById[Number(sheetIdMap[type])];
 };
 
 export default doc;

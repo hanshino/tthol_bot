@@ -9,8 +9,7 @@ import {
   blockQuote,
   codeBlock,
 } from "discord.js";
-import { sheetByType } from "../utilities/equip/sheet";
-import { get } from "lodash";
+import { EquipSheetRow, sheetByType } from "../utilities/equip/sheet";
 import { findByName } from "../utilities/equip/searcher";
 import { Op, Sequelize } from "sequelize";
 import item, { Item } from "../models/item";
@@ -29,7 +28,10 @@ const execution = async (
   const keyword = options.getString("keyword") as string;
   const textOnly = options.getBoolean("text_only");
   const sheet = await sheetByType("driver");
-  const rows = await sheet.getRows({ offset: 1, limit: sheet.rowCount });
+  const rows = await sheet.getRows<EquipSheetRow>({
+    offset: 1,
+    limit: sheet.rowCount,
+  });
   const Item = item(database);
 
   const sheetResult = findByName(rows, keyword);
@@ -52,8 +54,9 @@ const execution = async (
     const name = row.getDataValue("name");
 
     // sheet result has multiple rows
-    const sheetTarget = sheetResult.find((row) => row["名稱"] === name);
-    const image = get(sheetTarget, "新版圖片", get(sheetTarget, "圖片網址"));
+    const sheetTarget = sheetResult.find((row) => row.get("名稱") === name);
+    const image =
+      sheetTarget?.get("新版圖片") || sheetTarget?.get("圖片網址");
 
     const options = {
       title: name,

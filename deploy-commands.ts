@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "path";
 
 if (fs.existsSync(".env")) {
-  dotenv.config();
+  dotenv.config({ quiet: true });
 }
 
 const commands = [];
