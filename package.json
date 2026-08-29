@@ -13,8 +13,6 @@
   "dependencies": {
     "discord.js": "^14.27.0",
     "dotenv": "^17",
-    "google-auth-library": "^11",
-    "google-spreadsheet": "^5",
     "lodash": "^4.18.1",
     "sequelize": "^6.37.8",
     "sqlite3": "^6"

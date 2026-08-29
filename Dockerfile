@@ -14,8 +14,6 @@ RUN yarn install
 # Copy source files
 COPY . .
 
-RUN test -f config/credential.json || cp config/credential.example.json config/credential.json
-
 # Build the app
 RUN yarn build
 

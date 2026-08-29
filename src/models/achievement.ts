@@ -1,3 +1,0 @@
-import { DataTypes, Model, Sequelize } from "sequelize";
-export class Achievement extends Model {}
-export default (sequelize: Sequelize) => Achievement.init({ id: { type: DataTypes.INTEGER, primaryKey: true }, subCatId: { type: DataTypes.INTEGER, field: "sub_cat_id" }, groupNo: { type: DataTypes.INTEGER, field: "group_no" }, name: DataTypes.STRING, description: DataTypes.STRING, resetType: { type: DataTypes.INTEGER, field: "reset_type" }, points: DataTypes.INTEGER, rewardType: { type: DataTypes.INTEGER, field: "reward_type" }, rewardId: { type: DataTypes.INTEGER, field: "reward_id" }, rewardAmount: { type: DataTypes.INTEGER, field: "reward_amount" } }, { sequelize, tableName: "achievements", timestamps: false });

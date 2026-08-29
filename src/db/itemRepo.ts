@@ -31,6 +31,50 @@ const HIDE_DUPLICATE_EXTRA = `NOT (${IS_EXTRA} AND EXISTS (
   WHERE y.name = i.name AND substr(coalesce(y.equip_slot,''),1,6) <> 'EXTRA_'
 ))`;
 
+/**
+ * 玩家角色穿戴得上的 type_name。排行 / 比較 / 屬性篩選共用這一份，
+ * 是「什麼算裝備」的唯一定義。
+ *
+ * 排除的是有數值卻不是玩家裝備的東西：POTION（藥水）會加素質但不是穿戴、
+ * PET_ORNAMENT 是「寵物」飾品（穿在寵物身上，不是角色）、ITEM_PET / ITEM_BOT 同理，
+ * 其餘 NORMAL_ITEM / BONUS / SCARCE_ITEM / EVENT_ITEM / RETURN_SCROLL /
+ * CASTLE_ITEM / MONEY 沒有戰鬥數值。
+ *
+ * 順序依 base_lv>=80 的實際筆數遞減，command 直接拿來當 Discord choices
+ * （上限 25，這裡 20 個）。
+ */
+export const EQUIPPABLE_TYPES = [
+  "HORSE", "WING", "HELMET", "ARMOR", "ORNAMENT", "BOOT", "BOXING", "STAFF",
+  "CLAW", "BLADE", "SWORD", "STING", "PUNCHER", "GREAT_SWORD", "BOW", "WHISK",
+  "ROD", "SHIELD", "HAMMER", "HIDDEN_WEAPON",
+] as const;
+
+/**
+ * EquipStats.stats 帶的原始欄位。equipStats() 與 statsByIds() 共用，
+ * 兩邊的 stats 形狀才會一致。
+ *
+ * damage_* / pdamage_* 是武器的核心數值（碧空烈漠劍 str=0 atk=0 但
+ * damage 1360~1396），少了它們比較兩把劍會整排 0。weighted.ts 的權重表
+ * 沒有這四個 key，所以多帶不影響排行分數。
+ */
+export const EQUIP_STAT_KEYS = [
+  "base_lv", "hp", "mp", "str", "pow", "vit", "dex", "agi", "wis", "atk",
+  "matk", "extra_def", "magic_def", "dodge", "uncanny_dodge", "critical_hit",
+  "hit", "attack_speed", "walk_speed", "fire_def", "water_def", "lightning_def",
+  "wood_def", "damage_min", "damage_max", "pdamage_min", "pdamage_max",
+];
+
+/** items 的一列 → EquipStats。equipStats / statsByIds 共用同一套投影 */
+function toEquipStats(row: any, imgs: any[]): EquipStats {
+  return {
+    id: Number(row.id),
+    name: row.name,
+    typeLabel: itemType(row.type_name, row.equip_slot),
+    iconUrl: imgs.find(i => i.itemId === row.id && i.kind === "icon")?.url ?? null,
+    stats: Object.fromEntries(EQUIP_STAT_KEYS.map(k => [k, row[k] || 0])),
+  };
+}
+
 export function createItemRepo(db: Sequelize) {
   return {
     async getById(id: number): Promise<ItemDetail | null> {
@@ -90,12 +134,14 @@ export function createItemRepo(db: Sequelize) {
     },
     async byAttribute(attribute: string, minimum: number) {
       if (!ATTRIBUTE_QUERY_KEYS.has(attribute)) throw new Error("Invalid attribute");
+      // 只回玩家裝備：藥水與寵物飾品也有 str/critical_hit，混在「篩選裝備」裡是錯的
       return db.query(
         `SELECT i.id,i.name,i.type_name,i.equip_slot,i.base_lv,${IS_EXTRA} AS isExtra
          FROM items i
-         WHERE i.${attribute} >= :minimum AND ${HIDE_DUPLICATE_EXTRA}
+         WHERE i.${attribute} >= :minimum AND i.type_name IN (:types)
+           AND ${HIDE_DUPLICATE_EXTRA}
          ORDER BY i.${attribute} DESC`,
-        { replacements: { minimum }, type: QueryTypes.SELECT },
+        { replacements: { minimum, types: [...EQUIPPABLE_TYPES] }, type: QueryTypes.SELECT },
       );
     },
     async suggest(keyword: string): Promise<SuggestOption[]> {
@@ -113,13 +159,27 @@ export function createItemRepo(db: Sequelize) {
          WHERE i.type_name=:type AND i.base_lv>=80 AND ${HIDE_DUPLICATE_EXTRA}`,
         { replacements: { type }, type: QueryTypes.SELECT },
       );
-      const keys = ["base_lv", "hp", "mp", "str", "pow", "vit", "dex", "agi", "wis", "atk", "matk", "extra_def", "magic_def", "dodge", "uncanny_dodge", "critical_hit", "hit", "attack_speed", "walk_speed", "fire_def", "water_def", "lightning_def", "wood_def"];
       const imgs: any[] = await itemImages(db, rows.map(x => x.id));
-      return rows.map(x => ({
-        id: x.id, name: x.name, typeLabel: itemType(x.type_name, x.equip_slot),
-        iconUrl: imgs.find(i => i.itemId === x.id && i.kind === "icon")?.url ?? null,
-        stats: Object.fromEntries(keys.map(k => [k, x[k] || 0])),
-      }));
+      return rows.map(x => toEquipStats(x, imgs));
+    },
+    /**
+     * 依 id 批次取 EquipStats，只回玩家裝備。
+     *
+     * getById() 回的 ItemDetail 數值已格式化成中文字串，反解很醜；
+     * equipStats() 綁死 base_lv>=80 的單一類別。比較功能需要「任意 id 的原始數值」，
+     * 所以獨立一支。查不到或不是裝備的 id 不會出現在結果裡，
+     * 呼叫端自己比對缺哪一個。
+     */
+    async statsByIds(ids: number[]): Promise<EquipStats[]> {
+      if (!ids.length) return [];
+      const rows: any[] = await db.query(
+        `SELECT i.id,i.name,i.type_name,i.equip_slot,${EQUIP_STAT_KEYS.map(k => `i.${k}`).join(",")}
+         FROM items i
+         WHERE i.id IN (:ids) AND i.type_name IN (:types)`,
+        { replacements: { ids, types: [...EQUIPPABLE_TYPES] }, type: QueryTypes.SELECT },
+      );
+      const imgs: any[] = await itemImages(db, rows.map(x => x.id));
+      return rows.map(x => toEquipStats(x, imgs));
     },
   };
 }
