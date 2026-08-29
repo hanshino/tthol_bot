@@ -1,193 +1,138 @@
 import {
   ChatInputCommandInteraction,
   CommandInteractionOptionResolver,
-  EmbedBuilder,
-  Message,
+  MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-import { Op, Sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
 import driverCommand from "./driver";
 import backCommand from "./back";
-import item, { Item } from "../models/item";
-import { monster } from "../models/monster";
-import { MultiResultMenuBuilder } from "../utilities/equip/builder";
-import { chunk } from "lodash";
+import { createItemRepo } from "../db/itemRepo";
+import { itemType } from "../domain/enums";
+import {
+  buildItemDetail,
+  buildResultList,
+  failed,
+  notFound,
+  validateMessage,
+} from "../ui";
+import { encodePageToken } from "../routing/customId";
+
 const { execute: driver } = driverCommand;
 const { execute: back } = backCommand;
 
-const execution = async (
-  database: Sequelize,
-  interaction: ChatInputCommandInteraction
-) => {
-  const options = interaction.options as CommandInteractionOptionResolver;
-  const subcommand = options.getSubcommand();
+const safe = (payload: object) => ({ ...payload, allowedMentions: { parse: [] } });
 
-  switch (subcommand) {
-    case "back":
-      return await back(database, interaction);
-    case "driver":
-      return await driver(database, interaction);
-    case "search":
-      return await searchItem(database, interaction);
+const replyContainer = async (
+  interaction: ChatInputCommandInteraction,
+  container: unknown,
+) => {
+  const problems = validateMessage(container);
+  if (problems.length) {
+    console.error("Invalid UI message:", problems);
+    await interaction.reply(safe({ ...failed("查詢"), flags: MessageFlags.Ephemeral }));
+    return;
   }
+  await interaction.reply(safe({
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+  }));
 };
 
 const searchItem = async (
   database: Sequelize,
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ) => {
-  await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;
-  const Item = item(database);
-  const Monster = monster(database);
-  const keyword = options.getString("keyword") as string;
+  const keyword = options.getString("keyword") ?? "";
+  const ownerId = interaction.user.id;
+  const repo = createItemRepo(database);
 
-  const generateResult = async (item: Item) => {
-    const embed = new EmbedBuilder()
-      .setTitle(item.getDataValue("name"))
-      .addFields(
-        { name: "種類", value: item.getDataValue("type") || "無" },
-        { name: "描述", value: item.getDataValue("summary") }
-      );
+  if (/^\d+$/.test(keyword)) {
+    const detail = await repo.getById(Number(keyword));
+    if (!detail) return interaction.reply(safe(notFound(keyword)));
+    return replyContainer(interaction, buildItemDetail(detail, { ownerId }));
+  }
 
-    const dropMonster = await Monster.findAll({
-      where: {
-        dropItem: {
-          [Op.like]: database.literal(`'%"${item.getDataValue("id")}"%'`),
-        },
-      },
-    });
+  const rows: any[] = await repo.search(keyword);
+  if (rows.length === 0) return interaction.reply(safe(notFound(keyword)));
+  if (rows.length === 1) {
+    const detail = await repo.getById(Number(rows[0].id));
+    if (!detail) return interaction.reply(safe(notFound(keyword)));
+    return replyContainer(interaction, buildItemDetail(detail, { ownerId }));
+  }
 
-    if (dropMonster.length !== 0 && dropMonster.length <= 110) {
-      const names = dropMonster.map((monster) => monster.getDataValue("name"));
-      chunk(names, 100).forEach((names, idx) =>
-        embed.addFields({
-          name: "掉落怪物" + (idx + 1),
-          value: names.join(", "),
-        })
-      );
-    }
-
-    return embed;
-  };
-
-  const result = await Item.findAll({
-    where: {
-      name: {
-        [Op.like]: `%${keyword}%`,
-      },
-    },
+  const token = encodePageToken({ kind: "item", keyword });
+  const totalPages = Math.max(1, Math.ceil(rows.length / 25));
+  const container = buildResultList({
+    title: `搜尋「${keyword}」`,
+    entries: rows.slice(0, 25).map((row) => ({
+      id: Number(row.id),
+      title: row.name,
+      subtitle: `${itemType(row.type_name, row.equip_slot)}・Lv${row.base_lv}`,
+      route: { kind: "item" as const, id: Number(row.id), action: "detail" as const },
+    })),
+    token,
+    page: 1,
+    totalPages,
+    total: rows.length,
+    ownerId,
   });
+  return replyContainer(interaction, container);
+};
 
-  if (result.length === 0) {
-    await interaction.editReply("找不到結果");
-    return;
+const execution = async (
+  database: Sequelize,
+  interaction: ChatInputCommandInteraction,
+) => {
+  const options = interaction.options as CommandInteractionOptionResolver;
+  switch (options.getSubcommand()) {
+    case "back": return back(database, interaction);
+    case "driver": return driver(database, interaction);
+    case "search": return searchItem(database, interaction);
   }
-
-  if (result.length >= 25) {
-    await interaction.editReply("找到太多結果，請縮小範圍");
-    return;
-  }
-
-  if (result.length !== 1) {
-    const message = await interaction.editReply({
-      content: "找到多個結果，請選擇",
-      components: [
-        MultiResultMenuBuilder({
-          customId: "item-search",
-          placeholder: "請選擇",
-          options: result.map((item: Item) => ({
-            label: item.getDataValue("name"),
-            value: item.getDataValue("id").toString(),
-          })),
-        }),
-      ],
-    });
-
-    const filter = (i: any) => i.customId === "item-search";
-    const collector = message.createMessageComponentCollector({
-      filter,
-      time: 10000,
-    });
-
-    collector.on("collect", async (i: any) => {
-      const value = i.values[0];
-      const item = result.find(
-        (item: Item) => item.getDataValue("id").toString() === value
-      ) as Item;
-      const embed = await generateResult(item);
-
-      await i.update({
-        content: `查詢結果: ${item.getDataValue("name")}`,
-        embeds: [embed],
-        components: [],
-      });
-    });
-
-    collector.on("end", async (collected) => {
-      if (collected.size !== 0) {
-        return;
-      }
-
-      await (message as Message).edit({
-        content: "沒有選擇結果",
-        components: [],
-      });
-    });
-    return;
-  }
-
-  const [row] = result;
-  const embed = await generateResult(row);
-  await interaction.editReply({
-    content: `查詢結果: ${row.getDataValue("name")}`,
-    embeds: [embed],
-  });
 };
 
 const command = {
   name: "item",
   data: new SlashCommandBuilder()
     .setName("item")
+    .setNameLocalizations({ "zh-TW": "道具" })
     .setDescription("查找道具資訊")
+    .setDescriptionLocalizations({ "zh-TW": "查詢道具資訊" })
     .addSubcommand((subcommand) =>
       subcommand
         .setName("search")
+        .setNameLocalizations({ "zh-TW": "查詢" })
         .setDescription("查找道具資訊")
+        .setDescriptionLocalizations({ "zh-TW": "查詢道具資訊" })
         .addStringOption((option) =>
           option
             .setName("keyword")
+            .setNameLocalizations({ "zh-TW": "關鍵字" })
             .setDescription("關鍵字")
+            .setDescriptionLocalizations({ "zh-TW": "關鍵字" })
             .setRequired(true)
             .setMinLength(1)
             .setMaxLength(10)
-        )
+            .setAutocomplete(true),
+        ),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("back")
         .setDescription("查找背飾資訊")
         .addStringOption((option) =>
-          option
-            .setName("keyword")
-            .setDescription("關鍵字")
-            .setRequired(true)
-            .setMinLength(1)
-            .setMaxLength(10)
-        )
+          option.setName("keyword").setDescription("關鍵字").setRequired(true).setMinLength(1).setMaxLength(10),
+        ),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("driver")
         .setDescription("查找座騎資訊")
         .addStringOption((option) =>
-          option
-            .setName("keyword")
-            .setDescription("關鍵字")
-            .setRequired(true)
-            .setMinLength(1)
-            .setMaxLength(10)
-        )
+          option.setName("keyword").setDescription("關鍵字").setRequired(true).setMinLength(1).setMaxLength(10),
+        ),
     ),
   execute: execution,
 };

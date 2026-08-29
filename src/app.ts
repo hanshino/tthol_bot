@@ -7,6 +7,10 @@ import {
 import { Command, MyClient } from "./type";
 import { Sequelize } from "sequelize";
 import path from "node:path";
+import { setRouteEncoder } from "./ui";
+import { encode } from "./routing/customId";
+
+setRouteEncoder(encode);
 
 const { Guilds, MessageContent, GuildMessages, GuildMembers } =
   GatewayIntentBits;
