@@ -14,6 +14,23 @@ export async function itemImages(db: Sequelize, ids: number[]) {
   );
 }
 
+/**
+ * 外裝（紙娃娃）判定：equip_slot 以 EXTRA_ 開頭。
+ * 用 substr 而非 LIKE 'EXTRA_%'，因為 LIKE 的 `_` 是萬用字元會誤配。
+ */
+const IS_EXTRA = "substr(coalesce(i.equip_slot,''),1,6)='EXTRA_'";
+
+/**
+ * ponytail: 外裝只在「同名的正常裝備也存在」時才隱藏 —— 這正是使用者看到
+ * 白鯨兩筆的原因（HORSE lv120 與 EXTRA_HORSE lv60）。全部排除會讓 585 個
+ * 只以外裝形式存在的名稱（聖誕雪橇車、燕南天劍等）從此查不到。
+ * 不用「敘述含外裝」比對：有 249 筆只是在描述裡提到外裝的禮包會被誤殺。
+ */
+const HIDE_DUPLICATE_EXTRA = `NOT (${IS_EXTRA} AND EXISTS (
+  SELECT 1 FROM items y
+  WHERE y.name = i.name AND substr(coalesce(y.equip_slot,''),1,6) <> 'EXTRA_'
+))`;
+
 export function createItemRepo(db: Sequelize) {
   return {
     async getById(id: number): Promise<ItemDetail | null> {
@@ -53,39 +70,47 @@ export function createItemRepo(db: Sequelize) {
     async search(keyword: string) {
       const kws = keyword.trim().split(/\s+/).filter(Boolean);
       const where = kws.length
-        ? kws.map((_, i) => `name LIKE :k${i}`).join(" AND ")
+        ? kws.map((_, i) => `i.name LIKE :k${i}`).join(" AND ")
         : "1=0";
       return db.query(
-        `SELECT id,name,type_name,equip_slot,base_lv FROM items
-         WHERE ${where} ORDER BY id`,
+        `SELECT i.id,i.name,i.type_name,i.equip_slot,i.base_lv,${IS_EXTRA} AS isExtra
+         FROM items i
+         WHERE ${where} AND ${HIDE_DUPLICATE_EXTRA} ORDER BY i.id`,
         { replacements: Object.fromEntries(kws.map((k, i) => [`k${i}`, `%${k}%`])),
           type: QueryTypes.SELECT },
       );
     },
     async byType(type: string) {
       return db.query(
-        "SELECT id,name,type_name,equip_slot,base_lv FROM items WHERE type_name=:type ORDER BY name",
+        `SELECT i.id,i.name,i.type_name,i.equip_slot,i.base_lv,${IS_EXTRA} AS isExtra
+         FROM items i
+         WHERE i.type_name=:type AND ${HIDE_DUPLICATE_EXTRA} ORDER BY i.name`,
         { replacements: { type }, type: QueryTypes.SELECT },
       );
     },
     async byAttribute(attribute: string, minimum: number) {
       if (!ATTRIBUTE_QUERY_KEYS.has(attribute)) throw new Error("Invalid attribute");
       return db.query(
-        `SELECT id,name,type_name,equip_slot,base_lv FROM items
-         WHERE ${attribute} >= :minimum ORDER BY ${attribute} DESC`,
+        `SELECT i.id,i.name,i.type_name,i.equip_slot,i.base_lv,${IS_EXTRA} AS isExtra
+         FROM items i
+         WHERE i.${attribute} >= :minimum AND ${HIDE_DUPLICATE_EXTRA}
+         ORDER BY i.${attribute} DESC`,
         { replacements: { minimum }, type: QueryTypes.SELECT },
       );
     },
     async suggest(keyword: string): Promise<SuggestOption[]> {
       const rows: any[] = await db.query(
-        "SELECT id,name FROM items WHERE name LIKE :keyword AND name <> '' ORDER BY name LIMIT 25",
+        `SELECT i.id,i.name FROM items i
+         WHERE i.name LIKE :keyword AND i.name <> '' AND ${HIDE_DUPLICATE_EXTRA}
+         ORDER BY i.name LIMIT 25`,
         { replacements: { keyword: `%${keyword}%` }, type: QueryTypes.SELECT },
       );
       return rows.map(x => ({ name: x.name, value: String(x.id) }));
     },
     async equipStats(type: string): Promise<EquipStats[]> {
       const rows: any[] = await db.query(
-        "SELECT * FROM items WHERE type_name=:type AND base_lv>=80",
+        `SELECT i.* FROM items i
+         WHERE i.type_name=:type AND i.base_lv>=80 AND ${HIDE_DUPLICATE_EXTRA}`,
         { replacements: { type }, type: QueryTypes.SELECT },
       );
       const keys = ["base_lv", "hp", "mp", "str", "pow", "vit", "dex", "agi", "wis", "atk", "matk", "extra_def", "magic_def", "dodge", "uncanny_dodge", "critical_hit", "hit", "attack_speed", "walk_speed", "fire_def", "water_def", "lightning_def", "wood_def"];

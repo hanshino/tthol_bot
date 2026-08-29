@@ -69,7 +69,14 @@ const searchItem = async (
     entries: rows.slice(0, 25).map((row) => ({
       id: Number(row.id),
       title: row.name,
-      subtitle: `${itemType(row.type_name, row.equip_slot)}・Lv${row.base_lv}`,
+      subtitle: [
+        itemType(row.type_name, row.equip_slot),
+        row.base_lv > 0 ? `Lv${row.base_lv}` : null,
+        // 只以外裝形式存在的物品才會留在結果裡，標示出來讓使用者一眼分辨
+        row.isExtra ? "外裝" : null,
+      ]
+        .filter(Boolean)
+        .join("・"),
       route: { kind: "item" as const, id: Number(row.id), action: "detail" as const },
     })),
     token,
