@@ -1,5 +1,5 @@
 import {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   SlashCommandBuilder,
   CommandInteractionOptionResolver,
   Message,
@@ -22,7 +22,7 @@ import equipConfig from "../../config/equip.json";
 
 const execution = async (
   database: Sequelize,
-  interaction: CommandInteraction
+  interaction: ChatInputCommandInteraction
 ) => {
   await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;

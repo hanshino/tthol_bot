@@ -1,5 +1,5 @@
 import {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   CommandInteractionOptionResolver,
   EmbedBuilder,
   Message,
@@ -17,7 +17,7 @@ const { execute: back } = backCommand;
 
 const execution = async (
   database: Sequelize,
-  interaction: CommandInteraction
+  interaction: ChatInputCommandInteraction
 ) => {
   const options = interaction.options as CommandInteractionOptionResolver;
   const subcommand = options.getSubcommand();
@@ -34,7 +34,7 @@ const execution = async (
 
 const searchItem = async (
   database: Sequelize,
-  interaction: CommandInteraction
+  interaction: ChatInputCommandInteraction
 ) => {
   await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;

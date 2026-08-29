@@ -1,7 +1,7 @@
 import {
   bold,
   codeBlock,
-  CommandInteraction,
+  ChatInputCommandInteraction,
   CommandInteractionOptionResolver,
   EmbedBuilder,
   inlineCode,
@@ -86,7 +86,7 @@ const matrix = [
 
 const execution = async (
   database: Sequelize,
-  interaction: CommandInteraction
+  interaction: ChatInputCommandInteraction
 ) => {
   await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;
@@ -105,7 +105,7 @@ const execution = async (
   }
 };
 
-async function sevenstar(interaction: CommandInteraction) {
+async function sevenstar(interaction: ChatInputCommandInteraction) {
   const options = interaction.options as CommandInteractionOptionResolver;
   const number = options.getInteger("number") as number;
 
@@ -124,7 +124,7 @@ async function sevenstar(interaction: CommandInteraction) {
   await interaction.editReply(codeBlock(messages.join("\n")));
 }
 
-async function forest(interaction: CommandInteraction) {
+async function forest(interaction: ChatInputCommandInteraction) {
   const options = interaction.options as CommandInteractionOptionResolver;
   const sum = options.getInteger("sum") as number;
   const room1 = options.getString("room1") as string;
@@ -206,7 +206,7 @@ async function forest(interaction: CommandInteraction) {
   await interaction.editReply({ embeds: [embed] });
 }
 
-async function godquest(interaction: CommandInteraction) {
+async function godquest(interaction: ChatInputCommandInteraction) {
   const options = interaction.options as CommandInteractionOptionResolver;
   const sum = options.getInteger("sum") as number;
   const leak = options.getInteger("leak") as number;

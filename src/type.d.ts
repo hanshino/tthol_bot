@@ -1,6 +1,6 @@
 import {
   SlashCommandBuilder,
-  CommandInteraction,
+  ChatInputCommandInteraction,
   Collection,
   PermissionResolvable,
   Message,
@@ -12,7 +12,7 @@ import { Sequelize } from "sequelize";
 export interface Command {
   name: string;
   data: SlashCommandBuilder;
-  execute: (database: Sequelize, interaction: CommandInteraction) => void;
+  execute: (database: Sequelize, interaction: ChatInputCommandInteraction) => void;
 }
 
 export interface MyClient extends Client {

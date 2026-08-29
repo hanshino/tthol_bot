@@ -1,5 +1,5 @@
 import {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   CommandInteractionOptionResolver,
   ComponentType,
   EmbedBuilder,
@@ -29,7 +29,7 @@ const note = [
 
 const execution = async (
   database: Sequelize,
-  interaction: CommandInteraction
+  interaction: ChatInputCommandInteraction
 ) => {
   await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;

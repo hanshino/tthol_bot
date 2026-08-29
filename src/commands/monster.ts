@@ -1,5 +1,5 @@
 import {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   CommandInteractionOptionResolver,
   EmbedBuilder,
   SlashCommandBuilder,
@@ -81,7 +81,7 @@ const generateItemResult = (rows: TypeItem[]) => {
 
 const execution = async (
   database: Sequelize,
-  interaction: CommandInteraction
+  interaction: ChatInputCommandInteraction
 ) => {
   await interaction.deferReply();
   const options = interaction.options as CommandInteractionOptionResolver;
