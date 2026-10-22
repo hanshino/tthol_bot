@@ -12,7 +12,7 @@ Discord.js v14 + TypeScript bot; one package. It reads a gitignored SQLite DB at
 
 ## Required local data
 
-- Runtime SQLite is fixed at `database/tthol.sqlite`; it is gitignored and not seeded. It is not required for a build. Compose bind-mounts both `config/` and `database/`, so host files override image contents and preserve DB data across rebuilds.
+- Runtime SQLite is fixed at `database/tthol.sqlite`; it is gitignored and not seeded. It is not required for a build. Compose bind-mounts `database/`, preserving DB data across rebuilds. `.dockerignore` excludes `.env`, `config/`, and `database/`, so no secrets or data are baked into images.
 - `.env` needs `DISCORD_APP_TOKEN`. Slash-command deployment also needs `DISCORD_CLIENT_ID`, which `.env.example` omits.
 
 ## Wiring and data quirks

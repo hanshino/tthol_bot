@@ -10,5 +10,4 @@ services:
     env_file:
       - .env
     volumes:
-      - ./config:/usr/src/app/config
       - ./database:/usr/src/app/database
